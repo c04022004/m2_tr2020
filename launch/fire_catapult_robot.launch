@@ -1,0 +1,13 @@
+<launch>
+	<include file="$(find m2_umd)/launch/motor_umd.launch" >
+        <arg name="umd_port" value="/dev/tinyboard-motor-350022000147333135383339" />
+    </include>
+	<include file="$(find m2_umd)/launch/encoder_umd.launch" >
+        <arg name="umd_port" value="/dev/tinyboard-encoder-26001C000A51485536363231" />
+    </include>
+	<include file="$(find imu_nav2)/launch/imu_nav2.launch" >
+        <arg name="imu_port" value="/dev/ft232r-A50285BI" />
+    </include>
+    
+	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch" />
+</launch>

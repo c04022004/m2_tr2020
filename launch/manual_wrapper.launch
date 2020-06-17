@@ -1,0 +1,10 @@
+<launch>
+    <arg name = "joy" default = "/dev/ds4blue"/>
+
+    <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
+        <arg name = "joy" value = "$(arg joy)"/>
+        <arg name = "joy_deadzone" value = "0.02"/>
+    </include>
+
+    <node name = "ps4_handler" pkg = "m2_tr2020" type = "ps4_handler.py" output = "screen" respawn = "true" />
+</launch>
