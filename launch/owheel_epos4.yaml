@@ -1,0 +1,46 @@
+motors: [
+  {
+    x: 0.266413, 
+    y: 0.266413, 
+    beta: rad(3.0/4.0 * pi),
+    gamma: rad(0.0 * pi),
+    radius: 0.0762,
+    multiplier: rad(-1 * 91/6.0 * 9.5492965964254)
+  }, 
+  {
+    x: -0.266413, 
+    y: 0.266413, 
+    beta: rad(5.0/4.0 * pi),
+    gamma: rad(0.0 * pi),
+    radius: 0.0762,
+    multiplier: rad(-1 * 91/6.0 * 9.5492965964254)
+  }, 
+  {
+    x: -0.266413, 
+    y: -0.266413, 
+    beta: rad(7.0/4.0 * pi),
+    gamma: rad(0.0 * pi),
+    radius: 0.0762,
+    multiplier: rad(-1 * 91/6.0 * 9.5492965964254)
+  },
+  {
+    x: 0.266413, 
+    y: -0.266413, 
+    beta: rad(1.0/4.0 * pi),
+    gamma: rad(0.0 * pi),
+    radius: 0.0762,
+    multiplier: rad(-1 * 91/6.0 * 9.5492965964254)
+  }
+]
+
+# Explanation of multiplier:
+# Gear ratio = 91/6.0: 15:1 motors are used, actual gear ratio is 91/6
+# Encoder mul = 500*4: 500 counts in the encoder, Quadrature decoding makes the actual count 4 times larger
+# Command cycle: implementation detail in UMD motor board, usually 4ms
+# Usually set to 4 ms, motor setpoint is calculated as  "encoder counts / command cycle"
+# /2pi is to convert rad/s to rev/s
+
+# wheel is placed such that center axis is on (0,0), when turned anticlockwise (looked from outside) it runs in +ve x direction and 0 y movement
+
+# refer to https://modernrobotics.northwestern.edu/nu-gm-book-resource/13-2-omnidirectional-wheeled-mobile-robots-part-1-of-2/ for
+# definition of gamma and beta
