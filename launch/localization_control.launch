@@ -1,0 +1,5 @@
+<launch>
+	<include file="$(find m2_encoder_imu_board)/launch/actionx.launch" />
+
+    <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" />
+</launch>

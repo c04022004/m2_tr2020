@@ -8,6 +8,10 @@ from math import pi
 from m2_tr2020.msg import *
 import time
 
+MATCH_NONE = 0
+MATCH_RED  = 1
+MATCH_BLUE = 2
+
 def PurePursuitConstructor(knots, target_z = 0.0, vel = 1.0, radius=0.5):
     # returns a SwitchModeGoal set to PURE_PURSUIT, with some default values
 
@@ -25,10 +29,11 @@ def PurePursuitConstructor(knots, target_z = 0.0, vel = 1.0, radius=0.5):
     pure_pursuit_data.target_z = target_z
 
     pure_pursuit_data.lookahead_distance = 0.2
+    pure_pursuit_data.vector_policy = pure_pursuit_data.TANGENTIAL_PID_TWIST
 
     pure_pursuit_data.stop_type = pure_pursuit_data.STOP_PID
     pure_pursuit_data.stop_pid_radius = radius
-    pure_pursuit_data.stop_kP = 2.0
+    pure_pursuit_data.stop_kP = 1.0
 
     goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
     return goal
@@ -42,29 +47,15 @@ class FulltaskSceneHandler(object):
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
-        rospy.Timer(rospy.Duration(0.05), self.publish_cartop_status)
-        self.status_dict = {}
 
         self._action_name = "tr_server"
-        self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
 
-    def publish_cartop_status(self, args):
-        marker = Marker()
-        marker.header.frame_id = self.omni_frame
-        marker.header.stamp = rospy.Time.now()
-        marker.type = Marker.TEXT_VIEW_FACING
-        marker.ns = "cartop_status"
-        marker.action = Marker.ADD
-        marker.scale.z = 0.25
-        marker.color.a = 1.0
-        marker.color.r = marker.color.g = marker.color.b = 1.0
-        marker.pose.position.z = 0.5
-
-        for key in self.status_dict:
-            marker.text += key + ": " + self.status_dict[key] + "\n"
-
-        self.cartop_status_pub.publish(marker)
+        if (match_color == MATCH_BLUE):
+            print("tr_server started with BLUE")
+        if (match_color == MATCH_RED):
+            print("tr_server started with RED")
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
@@ -79,21 +70,23 @@ class FulltaskSceneHandler(object):
             if (msg.progress > 0.95):
                 event.set() # python threading event
         return intermediate_func
-        if (goal.scene_id == 2):
-            self.scene_2()
 
     def scene_1(self):
         # IMPORTANT: A NEW EVENT OBJECT SHOULD BE CREATED (ASSIGNED) FOR EACH GOAL
         self.path_finish_event = threading.Event() # python threading event.
         # IMPORTANT: A NEW EVENT OBJECT SHOULD BE CREATED (ASSIGNED) FOR EACH GOAL
-
+        
         rospy.loginfo("Fulltask scene 1 start!")
+        start_time = time.time()
 
         self.path_finish_event = threading.Event()
-        chk_pts = [Point(x=point[0], y=point[1]) for point in [ (0.5, 9.5), (0.5, 1.5) ]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots = chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        chk_pts = [Point(x=point[0], y=point[1]) for point in [ (0.75, 9.5), (0.75, 1.5) ]]
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=3.0, radius=1.5), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
 
     def scene_2(self):
         rospy.loginfo("Fulltask try 1 start!")
@@ -101,7 +94,7 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (0.5,1.5),(4.03409,3.80815),(5.98142,3.14402) ]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots = chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to tryspot 1")
         self.path_finish_event.wait()
 
@@ -111,7 +104,7 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (5.98142,3.14402), (4.03409,3.80815), (0.5,1.5)]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots = chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -125,7 +118,7 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (1.0,1.5),(3.27953,3.77892),(5.65563,4.47238) ]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots = chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to tryspot 2")
         self.path_finish_event.wait()
 
@@ -133,18 +126,27 @@ class FulltaskSceneHandler(object):
         rospy.sleep(1.5)
         rospy.loginfo("done try")
 
-        start_time = time.time()
-
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (5.65563,4.47238), (3.27953,3.77892), (1.0,1.5)]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots = chk_pts, target_z=-pi/2, vel=4.0, radius=1.0), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=0.0, vel=4.0, radius=1.0), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
         rospy.loginfo("try done. one way time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
     
+    def scene_4(self):
+        rospy.loginfo("Fulltask scene 4 start!")
+        start_time = time.time()
 
+        self.path_finish_event = threading.Event()
+        chk_pts = [Point(x=point[0], y=point[1]) for point in [ (0.75, 1.5), (0.75, 9.5) ]]
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=3.0, radius=1.5), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to receive pos")
+        self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
 
     def execute_cb(self, goal):
         # print(goal)
@@ -154,8 +156,11 @@ class FulltaskSceneHandler(object):
             self.scene_2()
         if (goal.scene_id == 3):
             self.scene_3()
+        if (goal.scene_id == 4):
+            self.scene_4()
 
 if __name__ == "__main__":
-    rospy.init_node('example_fulltask')
+    rospy.init_node('tr_server')
+    match_color = rospy.get_param("~match_color")
     fulltask_server = FulltaskSceneHandler()
     rospy.spin()
