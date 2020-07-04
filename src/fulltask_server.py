@@ -72,7 +72,8 @@ class FulltaskSceneHandler(object):
         return intermediate_func
 
     def do_try(self):
-        time.sleep(1.5)
+        pass
+        # time.sleep(1.5)
 
     def scene_1(self):
         rospy.loginfo("Fulltask scene 1 start!")
@@ -80,7 +81,7 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (0.75, 9.5), (0.75, 1.5) ]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=4.0, radius=1.5), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=5.5, radius=1.5), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -117,7 +118,7 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (1.0,1.5),(3.27953,3.77892),(5.65563,4.47238) ]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=4.0, radius=1.5), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=5.5, radius=2.0), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to tryspot 2")
         self.path_finish_event.wait()
 
@@ -127,11 +128,11 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         chk_pts = [Point(x=point[0], y=point[1]) for point in [ (5.65563,4.47238), (3.27953,3.77892), (1.0,1.5)]]
-        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=4.0, radius=1.0), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=-pi/2, vel=5.5, radius=2.0), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
-        rospy.loginfo("try done. one way time=%f"%(time.time()-start_time))
+        rospy.loginfo("try done. round trip time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
     # 
 
@@ -155,7 +156,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
-        rospy.loginfo("try done. one way time=%f"%(time.time()-start_time))
+        rospy.loginfo("try done. round trip time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
 
     def scene_5(self):
@@ -178,7 +179,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
-        rospy.loginfo("try done. one way time=%f"%(time.time()-start_time))
+        rospy.loginfo("try done. round trip time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult()) 
 
     def scene_6(self):
@@ -202,7 +203,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
-        rospy.loginfo("try done. one way time=%f"%(time.time()-start_time))
+        rospy.loginfo("try done. round trip time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult()) 
 
     def scene_7(self):
