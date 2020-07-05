@@ -87,6 +87,14 @@
 		<param name="epos4board_serial_number_server_timeout" value="$(arg motor_epos4board_serial_number_server_timeout)" />
 	</node>
 
+	<!-- io board -->
+	<node name="servo_io_board"
+		pkg="m2_servo_io_board"
+		type="servo_io_board.py"
+		output="screen">
+
+		<param name="serial_port" type="str" value="/dev/tinyboard-ServoIOBoard_0001"/>
+	</node>
 
 	<!-- Convert cmd_vel to motor v_setpoint -->
 	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">
