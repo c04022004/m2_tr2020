@@ -1,0 +1,11 @@
+<launch>
+	<!-- <include file="$(find m2_encoder_imu_board)/launch/actionx.launch">
+        <arg name="init_x" default="12.925"/>
+        <arg name="init_y" default="9.625"/> 
+        <arg name="init_z" default="1.570796326795"/>
+	    <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
+    </include> -->
+
+    <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" />
+    <node name = "tr_server" pkg = "m2_tr2020" type = "fulltask_server.py" output = "screen" respawn = "true" />
+</launch>
