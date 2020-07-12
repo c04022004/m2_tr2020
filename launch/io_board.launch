@@ -1,0 +1,14 @@
+<launch>
+
+	<!-- io board -->
+	<node name="servo_io_board"
+		pkg="m2_servo_io_board"
+		type="servo_io_board.py"
+		respawn="true"
+		output="screen">
+
+		<param name="serial_port" type="str" value="/dev/tinyboard-ServoIOBoard_0001" />
+                <param name="board_id"  value="1" />
+	</node>
+
+</launch>

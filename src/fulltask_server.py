@@ -7,43 +7,44 @@ from std_srvs.srv import Trigger
 from math import pi
 from m2_tr2020.msg import *
 import time
+# import shapely.geometry
+# import shapely.geometry.polygon
 
 MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
 POINT_S = (0.5, 9.5)
-POINT_C = (0.7, 0.9)
-POINT_1 = (5.72, 3.09+4.0*0.03+4*1.3)
-POINT_2 = (5.72, 3.09+3.0*0.03+3*1.3)
-POINT_3 = (5.72, 3.09+2.0*0.03+2*1.3)
-POINT_4 = (5.72, 3.09+1.0*0.03+1*1.3)
-POINT_5 = (5.72, 3.09+0.5*0.03+0*1.3)
+POINT_C = (1.1, 1.1)
+POINT_1 = (5.6, 3.09+4.0*0.03+4*1.3)
+POINT_2 = (5.6, 3.09+3.0*0.03+3*1.3)
+POINT_3 = (5.6, 3.09+2.0*0.03+2*1.3)
+POINT_4 = (5.6, 3.09+1.0*0.03+1*1.3)
+POINT_5 = (5.6, 3.09+0.5*0.03+0*1.3)
 
 CHK_PTS = [
-    [ POINT_S, POINT_C ],                                                             # scene 1
-    [ POINT_C,(2.26316,2.88727),(4.47998,4.81193),POINT_1 ],                          # scene 2
-    [ POINT_C,(2.61315,2.66303),(4.57492,4.80013),POINT_2 ],                          # scene 3
-    [ POINT_C,(2.55856,2.84425),POINT_3 ],                                            # scene 4
-    [ POINT_C,(2.3, 3),POINT_4 ],                                                     # scene 5
-    [ POINT_C,(1.31412,2.53211),(3.79225,3.88193),POINT_5 ],                          # scene 6
-    [ POINT_C, POINT_S ],                                                             # scene 7
+    [ POINT_S, POINT_C ],                          # scene 1
+    [ POINT_C,(3.25752,3.62086),(4.88318,5.20225),POINT_1 ],                          # scene 2
+    [ POINT_C,(3.25752,3.62086),(4.88318,5.20225),POINT_2 ],                          # scene 3
+    [ POINT_C,(3.1, 3.57),POINT_3 ],                          # scene 4
+    [ POINT_C,(3.0, 3.6),POINT_4 ],                          # scene 5
+    [ POINT_C,(3.54132,3.8803),POINT_5 ],                          # scene 6
+    [ POINT_C, POINT_S ],                          # scene 7
 ]
 
-TEST_SPEED_F = 3.0
-TEST_SPEED_B = 3.5
-RADIUS_F = 2.0
-RADIUS_B = 2.0
+TEST_SPEED_F = 2.0
+TEST_SPEED_B = 2.0
+RADIUS_F = 1.5
+RADIUS_B = 1.5
 CONFIG = [
     {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
     {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
     {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
     {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
     {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
-    {'vel_f':0.5, 'vel_b':0.5, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
-    {'vel_f':1, 'vel_b':1, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
+    {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
+    {'vel_f':TEST_SPEED_F, 'vel_b':TEST_SPEED_B, 'radius_f': RADIUS_F, 'radius_b': RADIUS_B},
 ]
-
 
 def PurePursuitConstructor(knots, target_z = 0.0, vel = 1.0, radius=0.5):
     # returns a SwitchModeGoal set to PURE_PURSUIT, with some default values
@@ -53,21 +54,25 @@ def PurePursuitConstructor(knots, target_z = 0.0, vel = 1.0, radius=0.5):
     pure_pursuit_data.spline_type = pure_pursuit_data.CUBIC
     
     pure_pursuit_data.knots = knots
-    pure_pursuit_data.point_density = 10000
+    pure_pursuit_data.point_density = 1000
     
     pure_pursuit_data.velocity_xy_magnitude = vel
 
-    pure_pursuit_data.velocity_z_kP = 3
-    pure_pursuit_data.velocity_z_max = 2
+    pure_pursuit_data.velocity_z_kP = 3.0
+    pure_pursuit_data.velocity_z_max = 2.0
     pure_pursuit_data.target_z = target_z
 
     pure_pursuit_data.lookahead_distance = 0.0
-    pure_pursuit_data.vector_policy = pure_pursuit_data.TANGENTIAL_PID_TWIST
-    pure_pursuit_data.velocity_shift_kP = 4.0
+    # pure_pursuit_data.vector_policy = pure_pursuit_data.TANGENTIAL_PID_TWIST
+    pure_pursuit_data.vector_policy = pure_pursuit_data.CURVATURE_DEPENDENT_TWIST_WITH_TANGENTIAL_PID
+    pure_pursuit_data.velocity_shift_kP = 6.0
+    pure_pursuit_data.velocity_shift_kD = 0.0  # unstable!
+    pure_pursuit_data.curvature_penalty_kP = 1.0
 
     pure_pursuit_data.stop_type = pure_pursuit_data.STOP_PID
     pure_pursuit_data.stop_pid_radius = radius
-    pure_pursuit_data.stop_kP = 1.5
+    pure_pursuit_data.stop_kP = 2.0
+    pure_pursuit_data.stop_kD = 0.4
 
     goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
     return goal
@@ -85,6 +90,7 @@ class FulltaskSceneHandler(object):
         self._action_name = "tr_server"
         self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
+        self.stop_polygon_pub = rospy.Publisher("stop_polygon", PolygonStamped, queue_size = 0)
 
         if (match_color == MATCH_BLUE):
             print("tr_server started with BLUE")
@@ -100,14 +106,49 @@ class FulltaskSceneHandler(object):
     def gen_intermediate_func(self, event):
         def intermediate_func(msg):
             # pose = msg.cur_pos.pose.pose
-            # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msgx.progress))
-            if (msg.progress > 0.95):
+            # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msg.progress))
+            if (msg.progress > 0.99):
                 event.set() # python threading event
         return intermediate_func
 
+    def gen_try_intermediate_func(self, event, try_y):
+        # try_polygon_points = [
+        #     (5.65, try_y-0.05),
+        #     (5.65, try_y+0.05),
+        #     # (6.65, 3.09+0.05),
+        #     # (6.65, 3.09-0.05)
+        #     (7.65, try_y+0.05),
+        #     (7.65, try_y-0.05)
+        # ]
+        # shapely_polygon = shapely.geometry.Polygon(try_polygon_points)
+        # def intermediate_func(msg):
+        #     stop_polygon_msg = PolygonStamped()
+        #     stop_polygon_msg.header.frame_id = "map"
+
+        #     for pair in try_polygon_points:
+        #         x = pair[0]
+        #         y = pair[1]
+
+        #         p = Point()
+        #         p.y = y
+        #         p.z = 0.02
+        #         stop_polygon_msg.polygon.points.append(p)
+            
+        #     self.stop_polygon_pub.publish(stop_polygon_msg)
+        #     pose = msg.cur_pos.pose.pose
+        #     # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msg.progress))
+        #     shapely_point = shapely.geometry.Point(pose.position.x, pose.position.y)
+
+        #     if (shapely_polygon.contains(shapely_point)):
+        #         stop_polygon_msg = PolygonStamped()
+        #         stop_polygon_msg.header.frame_id = "map"
+        #         self.stop_polygon_pub.publish(stop_polygon_msg)
+        #         event.set() # python threading event
+                
+        return intermediate_func
+
     def do_try(self):
-        time.sleep(10)
-        pass
+        time.sleep(0.1)
 
     def scene_1(self):
         rospy.loginfo("Fulltask scene 1 start!")
@@ -142,7 +183,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
-        time.sleep(2)
+        self.do_try()
         chk_pts.reverse()
         self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=t_z, vel=CONFIG[1]['vel_b'], radius=CONFIG[2]['radius_b']), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
@@ -166,7 +207,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
-        time.sleep(2)
+        self.do_try()
         chk_pts.reverse()
         self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=t_z, vel=CONFIG[2]['vel_b'], radius=CONFIG[3]['radius_b']), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
@@ -190,7 +231,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
-        time.sleep(2)
+        self.do_try()
         chk_pts.reverse()
         self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=t_z, vel=CONFIG[3]['vel_b'], radius=CONFIG[4]['radius_b']), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
@@ -214,7 +255,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
-        time.sleep(2)
+        self.do_try()
         chk_pts.reverse()
         self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=t_z, vel=CONFIG[4]['vel_b'], radius=CONFIG[5]['radius_b']), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
@@ -238,8 +279,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
-        time.sleep(2)
-
+        self.do_try()
         chk_pts.reverse()
         self.move_base_client.send_goal(PurePursuitConstructor(knots=chk_pts, target_z=t_z, vel=CONFIG[5]['vel_b'], radius=CONFIG[6]['radius_b']), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
