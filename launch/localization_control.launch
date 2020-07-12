@@ -1,11 +1,21 @@
 <launch>
+
+    <arg name="init_x" default="0.395"/>
+    <arg name="init_y" default="9.625"/>
+    <arg name="init_z" default="-1.570796326795"/>
 	<include file="$(find m2_encoder_imu_board)/launch/actionx.launch">
         <!-- <arg name="init_x" default="12.925"/> -->
-        <arg name="init_x" default="0.395"/>
-        <arg name="init_y" default="9.625"/>
-        <arg name="init_z" default="-1.570796326795"/>
 	    <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
     </include>
 
+    <node name="limit_switch_reset"
+		pkg="m2_tr2020"
+		type="limit_switch.py"
+		respawn="true">
+
+        <param name="reset_x" value="$(arg init_x)" />
+        <param name="reset_y" value="$(arg init_y)" />
+
+    </node>  
     <!-- <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" /> -->
 </launch>
