@@ -23,17 +23,17 @@ POINT_4 = (5.6, 3.09+1.0*0.03+1*1.3)
 POINT_5 = (5.6, 3.09+0.5*0.03+0*1.3)
 
 CHK_PTS = [
-    [ POINT_S, POINT_C ],                          # scene 1
-    [ POINT_C,(3.25752,3.62086),(4.88318,5.20225),POINT_1 ],                          # scene 2
-    [ POINT_C,(3.25752,3.62086),(4.88318,5.20225),POINT_2 ],                          # scene 3
-    [ POINT_C,(3.1, 3.57),POINT_3 ],                          # scene 4
-    [ POINT_C,(3.0, 3.6),POINT_4 ],                          # scene 5
-    [ POINT_C,(3.54132,3.8803),POINT_5 ],                          # scene 6
-    [ POINT_C, POINT_S ],                          # scene 7
+    [ POINT_S, POINT_C ], # scene 1
+    [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_1 ], # scene 2
+    [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_2 ], # scene 3
+    [ POINT_C,(3.1, 3.57),POINT_3 ], # scene 4
+    [ POINT_C,(2.45023,2.59568),(4.19525,3.97616),POINT_4 ], # scene 5
+    [ POINT_C,(2.99331,3.31949),(4.56409,3.48977),POINT_5 ], # scene 6
+    [ POINT_C, POINT_S ], # scene 7
 ]
 
-TEST_SPEED_F = 2.0
-TEST_SPEED_B = 2.0
+TEST_SPEED_F = 4.5
+TEST_SPEED_B = 4.5
 RADIUS_F = 1.5
 RADIUS_B = 1.5
 CONFIG = [
@@ -52,7 +52,8 @@ def PurePursuitConstructor(knots, target_z = 0.0, vel = 1.0, radius=0.5):
     pure_pursuit_data = PurePursuitData()
     #pure_pursuit_data.label = "bezier"
     pure_pursuit_data.spline_type = pure_pursuit_data.CUBIC
-    
+    # pure_pursuit_data.spline_type = pure_pursuit_data.BEZIER
+
     pure_pursuit_data.knots = knots
     pure_pursuit_data.point_density = 1000
     
