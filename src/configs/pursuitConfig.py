@@ -39,7 +39,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     vector_policy = PurePursuitData.CURVATURE_DEPENDENT_TWIST_WITH_TANGENTIAL_PID
     velocity_shift_kP = 6.0
     velocity_shift_kD = 0.0 # unstable!
-    curvature_penalty_kP = 1.0
+    curvature_penalty_kP = 0.4
 
     stop_type = PurePursuitData.STOP_PID
     # stop_pid_radius = 2.0
@@ -59,7 +59,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def goalConstructor(self, is_forward=True, speed=2.0, radius=1.0, stop_kD=0.0):
+    def goalConstructor(self, is_forward=True, speed=2.0, radius=1.0, stop_kD=0.0, curvature_penalty_kP=0.4):
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
