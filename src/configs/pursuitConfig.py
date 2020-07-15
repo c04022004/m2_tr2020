@@ -25,8 +25,8 @@ CHK_PTS = [
 class PurePursuitConfig: # Default setting of MATCH_RED
     speed_f = 2.5
     speed_b = 2.5
-    radius_f = 2.0
-    radius_b = 2.0
+    radius_f = 1.0
+    radius_b = 1.0
 
     spline_label = "cubic"
     spline_type = PurePursuitData.CUBIC
@@ -60,15 +60,17 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def reverseKnots(self):
-        self.chk_pts.reverse()
-
     def goalConstructor(self, is_forward):
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
 
-        pure_pursuit_data.knots = self.chk_pts
+        if is_forward:
+            pure_pursuit_data.knots = self.chk_pts
+        else:
+            copied_pts = self.chk_pts[:]
+            copied_pts.reverse()
+            pure_pursuit_data.knots = copied_pts
         pure_pursuit_data.point_density = self.point_density
         
         pure_pursuit_data.velocity_xy_magnitude = self.speed_f if is_forward else self.speed_b
@@ -95,6 +97,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 scene1_cfg = PurePursuitConfig("cubic", CHK_PTS[0])
 scene2_cfg = PurePursuitConfig("cubic", CHK_PTS[1])
 scene3_cfg = PurePursuitConfig("cubic", CHK_PTS[2])
+scene3_cfg.target_z = pi/2
 scene4_cfg = PurePursuitConfig("cubic", CHK_PTS[3])
 scene5_cfg = PurePursuitConfig("cubic", CHK_PTS[4])
 scene6_cfg = PurePursuitConfig("cubic", CHK_PTS[5])

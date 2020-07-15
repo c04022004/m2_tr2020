@@ -12,6 +12,7 @@ import time
 
 from configs.pursuitConfig import *
 
+
 MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
@@ -116,7 +117,6 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         
         self.do_try()
-        scene2_cfg.reverseKnots()
         self.move_base_client.send_goal(scene2_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
@@ -136,7 +136,6 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         
         self.do_try()
-        scene3_cfg.reverseKnots()
         self.move_base_client.send_goal(scene3_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
@@ -156,7 +155,6 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         
         self.do_try()
-        scene4_cfg.reverseKnots()
         self.move_base_client.send_goal(scene4_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
@@ -176,7 +174,6 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         
         self.do_try()
-        scene5_cfg.reverseKnots()
         self.move_base_client.send_goal(scene5_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
@@ -196,7 +193,6 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         
         self.do_try()
-        scene6_cfg.reverseKnots()
         self.move_base_client.send_goal(scene6_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
