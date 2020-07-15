@@ -8,7 +8,8 @@
         <arg name="init_x" value="$(arg init_x)"/>
         <arg name="init_y" value="$(arg init_y)"/>
         <arg name="init_z" value="$(arg init_z)"/>
-	    <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
+        <arg name="count_per_meter" value="[-25765.0, 25918.0]" />
+        <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
     </include>
 
     <node name="limit_switch_reset"
