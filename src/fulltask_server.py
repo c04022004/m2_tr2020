@@ -17,6 +17,7 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
+MAX_SPEED = 4.0
 
 class FulltaskSceneHandler(object):
 
@@ -89,7 +90,7 @@ class FulltaskSceneHandler(object):
         return intermediate_func
 
     def do_try(self):
-        time.sleep(0.1)
+        time.sleep(2)
 
     def scene_1(self):
         rospy.loginfo("Fulltask scene 1 start!")
@@ -98,7 +99,9 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene1_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene1_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene1_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.0, stop_kD=0.2),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -112,12 +115,16 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene2_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene2_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene2_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.2, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
         self.do_try()
-        self.move_base_client.send_goal(scene2_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene2_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*1.0, radius=1.2, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -131,12 +138,16 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene3_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene3_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene3_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
         self.do_try()
-        self.move_base_client.send_goal(scene3_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene3_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -150,12 +161,16 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene4_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene4_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene4_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
         self.do_try()
-        self.move_base_client.send_goal(scene4_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene4_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -169,12 +184,16 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene5_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene5_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene5_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
         self.do_try()
-        self.move_base_client.send_goal(scene5_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene5_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -188,12 +207,16 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene6_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene6_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene6_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
         
         self.do_try()
-        self.move_base_client.send_goal(scene6_cfg.goalConstructor(False), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene6_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*1.0, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 
@@ -207,7 +230,9 @@ class FulltaskSceneHandler(object):
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene7_cfg.knotsFlipX()
-        self.move_base_client.send_goal(scene7_cfg.goalConstructor(True), feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        self.move_base_client.send_goal(
+            scene7_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.9, radius=1.5, stop_kD=0.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receive pos")
         self.path_finish_event.wait()
 

@@ -23,10 +23,8 @@ CHK_PTS = [
 ]
 
 class PurePursuitConfig: # Default setting of MATCH_RED
-    speed_f = 2.5
-    speed_b = 2.5
-    radius_f = 1.0
-    radius_b = 1.0
+    speed = 2.5
+    radius = 1.0
 
     spline_label = "cubic"
     spline_type = PurePursuitData.CUBIC
@@ -44,9 +42,9 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     curvature_penalty_kP = 1.0
 
     stop_type = PurePursuitData.STOP_PID
-    stop_pid_radius = 2.0
-    stop_kP = 2.0
-    stop_kD = 0.4
+    # stop_pid_radius = 2.0
+    # stop_kP = 2.0
+    # stop_kD = 0.5
 
     def __init__(self, spline_label, raw_pts):
         self.spline_label = spline_label
@@ -61,7 +59,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def goalConstructor(self, is_forward):
+    def goalConstructor(self, is_forward=True, speed=2.0, radius=1.0, stop_kD=0.0):
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
@@ -74,7 +72,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
             pure_pursuit_data.knots = copied_pts
         pure_pursuit_data.point_density = self.point_density
         
-        pure_pursuit_data.velocity_xy_magnitude = self.speed_f if is_forward else self.speed_b
+        pure_pursuit_data.velocity_xy_magnitude = speed
 
         pure_pursuit_data.velocity_z_kP = self.velocity_z_kP
         pure_pursuit_data.velocity_z_max = self.velocity_z_max
@@ -87,9 +85,9 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         pure_pursuit_data.curvature_penalty_kP = self.curvature_penalty_kP
 
         pure_pursuit_data.stop_type = self.stop_type
-        pure_pursuit_data.stop_pid_radius = self.radius_f if is_forward else self.radius_b
-        pure_pursuit_data.stop_kP = self.stop_kP
-        pure_pursuit_data.stop_kD = self.stop_kD
+        pure_pursuit_data.stop_pid_radius = radius
+        pure_pursuit_data.stop_kP = speed/radius
+        pure_pursuit_data.stop_kD = stop_kD
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
         return goal
