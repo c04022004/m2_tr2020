@@ -49,6 +49,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     stop_kD = 0.4
 
     def __init__(self, spline_label, raw_pts):
+        self.spline_label = spline_label
         if spline_label == "cubic":
             self.spline_type = PurePursuitData.CUBIC
         elif spline_label == "bezier":
@@ -97,7 +98,6 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 scene1_cfg = PurePursuitConfig("cubic", CHK_PTS[0])
 scene2_cfg = PurePursuitConfig("cubic", CHK_PTS[1])
 scene3_cfg = PurePursuitConfig("cubic", CHK_PTS[2])
-scene3_cfg.target_z = pi/2
 scene4_cfg = PurePursuitConfig("cubic", CHK_PTS[3])
 scene5_cfg = PurePursuitConfig("cubic", CHK_PTS[4])
 scene6_cfg = PurePursuitConfig("cubic", CHK_PTS[5])
