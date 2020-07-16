@@ -23,9 +23,9 @@ class Line:
         self.pt0 = (x0, y0)
         self.pt1 = (x1, y1)
         self.shift_z = shift_z
-        # TODO: Confine angle_rad to a particlar range
         self.angle_rad = math.atan2(self.yDiff(), self.xDiff()) + shift_z
-        self.angle_degree_abs = abs(self.angle_rad*180/pi)
+        self.angle_rad += pi if self.angle_rad < 0.0 else 0.0 # Confine the angle range to [0, pi]
+        self.angle_degree = self.angle_rad*180/pi
         self.length = np.hypot(self.pt1[0]-self.pt0[0],self.pt1[1]-self.pt0[1])
 
     def xDiff(self):
@@ -88,7 +88,9 @@ def line_segments_cb(lines_msg):
         if lines_count < 2:
             continue
         for i in range(lines_count-1):
-            if abs(extracted_line.angle_degree_abs - lines[i].angle_degree_abs) < 45.0:
+            if abs(extracted_line.angle_degree - lines[i].angle_degree) < 45.0:
+                continue
+            if abs(extracted_line.angle_degree - lines[i].angle_degree) > 135.0:
                 continue
             intercept = line_intersection(extracted_line, lines[i])
             if intercept[0] is None:
@@ -164,13 +166,13 @@ def line_segments_cb(lines_msg):
         pt_polar_form = nearest_line.cartesian2PolarRad()
         pt_to_pub = Point(pt_polar_form[0], pt_polar_form[1], 0)
         base_line_pub.publish(pt_to_pub)
-        print(pt_polar_form)
+        # print(pt_polar_form)
     if diff_to_try_spot_wid < diff_to_try_spot_len and diff_to_try_spot_wid < tolerance:
         is_side_line = True
         pt_polar_form = nearest_line.cartesian2PolarRad()
         pt_to_pub = Point(pt_polar_form[0], pt_polar_form[1], 0)
         side_line_pub.publish(pt_to_pub)
-        print(pt_polar_form)
+        # print(pt_polar_form)
     if len(result_pts) < 3:
         return
     if is_base_line or is_side_line:
@@ -189,8 +191,8 @@ def line_segments_cb(lines_msg):
             if try_spot_center is None:
                 continue
             length_to_center = np.hypot(try_spot_center[0],try_spot_center[1])
-            # TODO: Confine angle_rad to a particlar range
             angle_rad = math.atan2(-try_spot_center[1], -try_spot_center[0]) + shift_z
+            angle_rad += pi if angle_rad < 0.0 else 0.0 # Confine the angle range to [0, pi]
             # print((length_to_center, angle_rad))
             pt_to_pub = Point(length_to_center, angle_rad, 0)
             try_spot_center_pub.publish(pt_to_pub)
