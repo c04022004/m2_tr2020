@@ -34,6 +34,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 
     lookahead_distance = 0.0
     vector_policy = PurePursuitData.CURVATURE_DEPENDENT_TWIST_WITH_TANGENTIAL_PID
+    # vector_policy = PurePursuitData.TANGENTIAL_PID_TWIST
     velocity_shift_kP = 6.0
     velocity_shift_kD = 0.0 # unstable!
     curvature_penalty_kP = 0.4
@@ -77,10 +78,10 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         pure_pursuit_data.target_z = self.target_z
 
         pure_pursuit_data.lookahead_distance = self.lookahead_distance
-        pure_pursuit_data.vector_policy = self.spline_type
+        pure_pursuit_data.vector_policy = self.vector_policy
         pure_pursuit_data.velocity_shift_kP = self.velocity_shift_kP
         pure_pursuit_data.velocity_shift_kD = self.velocity_shift_kD
-        pure_pursuit_data.curvature_penalty_kP = self.curvature_penalty_kP
+        pure_pursuit_data.curvature_penalty_kP = curvature_penalty_kP
 
         pure_pursuit_data.stop_type = self.stop_type
         pure_pursuit_data.stop_pid_integral_abs_max = self.stop_pid_integral_abs_max
