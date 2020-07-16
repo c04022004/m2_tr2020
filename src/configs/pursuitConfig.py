@@ -23,9 +23,6 @@ CHK_PTS = [
 ]
 
 class PurePursuitConfig: # Default setting of MATCH_RED
-    speed = 2.5
-    radius = 1.0
-
     spline_label = "cubic"
     spline_type = PurePursuitData.CUBIC
     raw_pts = []
@@ -42,6 +39,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     curvature_penalty_kP = 0.4
 
     stop_type = PurePursuitData.STOP_PID
+    stop_pid_integral_abs_max = 0.0
     # stop_pid_radius = 2.0
     # stop_kP = 2.0
     # stop_kD = 0.5
@@ -59,7 +57,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def goalConstructor(self, is_forward=True, speed=2.0, radius=1.0, stop_kD=0.0, curvature_penalty_kP=0.4):
+    def goalConstructor(self, is_forward=True, speed=2.0, radius=1.0, stop_kI=0.0, stop_kD=0.0, curvature_penalty_kP=0.4):
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
@@ -85,8 +83,11 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         pure_pursuit_data.curvature_penalty_kP = self.curvature_penalty_kP
 
         pure_pursuit_data.stop_type = self.stop_type
+        pure_pursuit_data.stop_pid_integral_abs_max = self.stop_pid_integral_abs_max
         pure_pursuit_data.stop_pid_radius = radius
+        pure_pursuit_data.stop_pid_integral_abs_max = 2 * radius
         pure_pursuit_data.stop_kP = speed/radius
+        pure_pursuit_data.stop_kI = stop_kI
         pure_pursuit_data.stop_kD = stop_kD
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
