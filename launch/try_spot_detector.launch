@@ -1,0 +1,15 @@
+<launch>
+
+<!-- <include file="$(find rplidar_ros)/launch/rplidar.launch">
+</include> -->
+
+<include file="$(find laser_line_extraction)/launch/example.launch">
+    <arg name="max_line_gap" default="0.09" />
+    <arg name="min_line_length" default="0.15" />
+    <arg name="min_line_points" default="12" />
+    <arg name="min_range" default="0.01" />
+    <arg name="min_split_dist" default="0.035" />
+    <arg name="outlier_dist" default="0.1" />
+</include>
+
+</launch>

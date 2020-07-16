@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 import rospy
 from geometry_msgs.msg import Twist
+from m2_chassis_utils.msg import ChannelTwist
 from m2_ps4.msg import Ps4Data
 from std_msgs.msg import Bool
 
-direct = Twist()
-max_linear_speed = 3.0
-max_rotational_speed = 1.5
+direct = ChannelTwist()
+direct.channel = ChannelTwist.CONTROLLER
+max_linear_speed = 1.5
+max_rotational_speed = 1.2
 
 old_data = Ps4Data()
 
 def ps4_cb(ps4_data): # update ps4 data
     global direct
-    direct.linear.y = max_linear_speed * ps4_data.hat_ly
-    direct.linear.x = max_linear_speed * ps4_data.hat_lx * -1
-    direct.angular.z = max_rotational_speed * ps4_data.hat_rx
+    if ps4_data.l1:
+        direct.linear.y = max_linear_speed * ps4_data.hat_ly
+        direct.linear.x = max_linear_speed * ps4_data.hat_lx * -1
+        direct.angular.z = max_rotational_speed * ps4_data.hat_rx
+        vel_pub.publish(direct)
 
     global old_data
     if ps4_data.triangle and not old_data.triangle: # dpad up
@@ -24,14 +28,10 @@ def ps4_cb(ps4_data): # update ps4 data
     old_data = ps4_data
 
 rospy.init_node('ps4_vel_controller')
-vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size = 1)
+vel_pub = rospy.Publisher('/chan_cmd_vel', ChannelTwist, queue_size = 1)
 ps4_sub = rospy.Subscriber('input/ps4_data', Ps4Data, ps4_cb)
 
 io_pub = rospy.Publisher('io_2/set_state', Bool, queue_size=1)
 
-rate = rospy.Rate(100)
-
-while not rospy.is_shutdown():
-    vel_pub.publish(direct)
-    rate.sleep()
+rospy.spin()
 

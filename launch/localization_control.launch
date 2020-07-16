@@ -8,7 +8,8 @@
         <arg name="init_x" value="$(arg init_x)"/>
         <arg name="init_y" value="$(arg init_y)"/>
         <arg name="init_z" value="$(arg init_z)"/>
-	    <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
+        <arg name="count_per_meter" value="[-25765.0, 25918.0]" />
+        <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
     </include>
 
     <node name="limit_switch_reset"
@@ -18,5 +19,17 @@
         <param name="reset_x" value="$(arg init_x)" />
         <param name="reset_y" value="$(arg init_y)" />
     </node>  
-    <!-- <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" /> -->
+
+    <!-- <node name = "mode_swticher"
+        pkg = "m2_move_base"
+        type = "mode_switcher.py"
+        output = "screen"
+        respawn = "true" /> -->
+
+    <node name = "rqt_viz"
+        pkg = "m2_chassis_utils"
+        type = "odom2plot.py"
+        output = "screen"
+        respawn = "true" />
+
 </launch>
