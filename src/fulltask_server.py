@@ -17,7 +17,7 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-MAX_SPEED = 5.0
+MAX_SPEED = 2.0
 
 class FulltaskSceneHandler(object):
 

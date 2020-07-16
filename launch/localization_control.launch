@@ -19,5 +19,17 @@
         <param name="reset_x" value="$(arg init_x)" />
         <param name="reset_y" value="$(arg init_y)" />
     </node>  
-    <!-- <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" /> -->
+
+    <!-- <node name = "mode_swticher"
+        pkg = "m2_move_base"
+        type = "mode_switcher.py"
+        output = "screen"
+        respawn = "true" /> -->
+
+    <node name = "rqt_viz"
+        pkg = "m2_chassis_utils"
+        type = "odom2plot.py"
+        output = "screen"
+        respawn = "true" />
+
 </launch>
