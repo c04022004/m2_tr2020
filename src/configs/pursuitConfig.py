@@ -69,7 +69,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     vector_policy = PurePursuitData.CURVATURE_DEPENDENT_TWIST_WITH_TANGENTIAL_PID
     # vector_policy = PurePursuitData.TANGENTIAL_PID_TWIST
     velocity_shift_kP = 6.0
-    velocity_shift_kD = 0.0 # unstable!
+    velocity_shift_kD = 0.01 # unstable!
     curvature_penalty_kP = 0.4
 
     stop_type = PurePursuitData.STOP_PID
