@@ -90,7 +90,7 @@ class FulltaskSceneHandler(object):
         return intermediate_func
 
     def do_try(self):
-        time.sleep(2)
+        time.sleep(0.5)
 
     def scene_0(self):
         rospy.loginfo("Fulltask scene 0 start!")
@@ -98,107 +98,11 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            scene1_cfg.knotsFlipX()
+            scene0_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
-            scene1_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*1.0, radius=2.75, stop_kI=0.00001, stop_kD=0.14, curvature_penalty_kP=0.4),
+            scene0_f_cfg.goalConstructor(speed=MAX_SPEED*1.0, radius=2.75, stop_kI=0.00001, stop_kD=0.14, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_5(self):
-        rospy.loginfo("Fulltask scene 5 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene2_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene2_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        self.move_base_client.send_goal(
-            scene2_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_4(self):
-        rospy.loginfo("Fulltask scene 4 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene3_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene3_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        self.move_base_client.send_goal(
-            scene3_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_3(self):
-        rospy.loginfo("Fulltask scene 3 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene4_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene4_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        self.move_base_client.send_goal(
-            scene4_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_2(self):
-        rospy.loginfo("Fulltask scene 2 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene5_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene5_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.8),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        self.move_base_client.send_goal(
-            scene5_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.8),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
+        rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -210,19 +114,126 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            scene6_cfg.knotsFlipX()
+            scene1_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
-            scene6_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.5, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=1.0),
+            scene1_f_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
+        rospy.loginfo("goal to Try Spot 1")
         self.path_finish_event.wait()
         
         self.do_try()
         self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene1_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
-            scene6_cfg.goalConstructor(is_forward=False, speed=MAX_SPEED*0.5, radius=2.0, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=1.0),
+            scene1_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
+        rospy.loginfo("goal to receiving pos")
+        self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
+
+    def scene_2(self):
+        rospy.loginfo("Fulltask scene 2 start!")
+        start_time = time.time()
+
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene2_f_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene2_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to Try Spot 2")
+        self.path_finish_event.wait()
+        
+        self.do_try()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene2_b_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene2_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to receiving pos")
+        self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
+
+
+    def scene_3(self):
+        rospy.loginfo("Fulltask scene 3 start!")
+        start_time = time.time()
+
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene3_f_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene3_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to Try Spot 3")
+        self.path_finish_event.wait()
+        
+        self.do_try()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene3_b_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene3_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0,curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to receiving pos")
+        self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
+
+    def scene_4(self):
+        rospy.loginfo("Fulltask scene 4 start!")
+        start_time = time.time()
+
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene4_f_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene4_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to Try Spot 4")
+        self.path_finish_event.wait()
+        
+        self.do_try()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene4_b_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene4_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to receiving pos")
+        self.path_finish_event.wait()
+
+        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+        self._as.set_succeeded(FulltaskResult())
+
+    def scene_5(self):
+        rospy.loginfo("Fulltask scene 5 start!")
+        start_time = time.time()
+
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene5_f_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene5_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to Try Spot 5")
+        self.path_finish_event.wait()
+        
+        self.do_try()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            scene5_b_cfg.knotsFlipX()
+        self.move_base_client.send_goal(
+            scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -234,11 +245,11 @@ class FulltaskSceneHandler(object):
 
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            scene7_cfg.knotsFlipX()
+            scene0_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
-            scene7_cfg.goalConstructor(is_forward=True, speed=MAX_SPEED*0.5, radius=1.5, stop_kI=0.00001, stop_kD=0.1, curvature_penalty_kP=0.4),
+            scene0_b_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=1.5, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receive pos")
+        rospy.loginfo("goal to TRSZ")
         self.path_finish_event.wait()
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))

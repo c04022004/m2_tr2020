@@ -8,7 +8,9 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-initial_value = {"init_x": rospy.get_param("/limit_switch_reset/reset_x"), "init_y": rospy.get_param("/limit_switch_reset/reset_y")}
+initial_value = {"init_x": rospy.get_param("/limit_switch_reset/reset_x"), 
+                "init_y": rospy.get_param("/limit_switch_reset/reset_y"),
+                "init_z": rospy.get_param("/limit_switch_reset/reset_z")}
 
 
 class IOState(object):
@@ -46,24 +48,41 @@ for i in range(8):
 
 odom_setx_pub = rospy.Publisher("/odom_set_x", Float32)
 odom_sety_pub = rospy.Publisher("/odom_set_y", Float32)
-match_color = MATCH_RED
+odom_setz_pub = rospy.Publisher("/odom_set_z", Float32)
+# match_color = MATCH_RED
 
 if __name__ == "__main__":
     rospy.init_node('limit_switch_reset')
     rate = rospy.Rate(100)
 
+    # Robot construction
+    # 
+    #        m1 / ----- \ m0        y
+    #           |       |           ^
+    #  sw(2,3)  |       | sw(0,1)   |--> x
+    #           |       | 
+    #        m2 \ ----- / m3
+    #            sw(4,5)
+
     while not rospy.is_shutdown():
         limit_switch_states = [ i.get_state() for i in limit_switches]
         rospy.loginfo(limit_switch_states)
+
         if limit_switch_states[0] and limit_switch_states[1]:
             reset_y_value = Float32(10.0-initial_value["init_y"])
             odom_sety_pub.publish(reset_y_value)
+            reset_z_value = Float32(initial_value["init_z"])
+            odom_setz_pub.publish(reset_z_value)
         if limit_switch_states[2] and limit_switch_states[3]:
             reset_y_value = Float32(initial_value["init_y"])
             odom_sety_pub.publish(reset_y_value)
+            reset_z_value = Float32(initial_value["init_z"])
+            odom_setz_pub.publish(reset_z_value)
         if limit_switch_states[4] and limit_switch_states[5]:
             reset_x_value = Float32(initial_value["init_x"])
             odom_setx_pub.publish(reset_x_value) 
+            reset_z_value = Float32(initial_value["init_z"])
+            odom_setz_pub.publish(reset_z_value)
 
 
         rate.sleep()
