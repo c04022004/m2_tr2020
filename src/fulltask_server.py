@@ -17,7 +17,7 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-MAX_SPEED = 2.0
+MAX_SPEED = 5.0
 
 class FulltaskSceneHandler(object):
 
@@ -49,7 +49,16 @@ class FulltaskSceneHandler(object):
         def intermediate_func(msg):
             # pose = msg.cur_pos.pose.pose
             # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msg.progress))
-            if (msg.progress > 0.99):
+            if self._as.is_active() and self._as.is_preempt_requested():
+                rospy.loginfo('Task preempted')
+                self._as.set_preempted()
+                event.set()
+            
+            if rospy.is_shutdown():
+                event.set()
+
+            if (msg.progress > 0.99 or 
+                self.move_base_client.get_result()==actionlib.TerminalState.ABORTED):
                 event.set() # python threading event
         return intermediate_func
 
@@ -145,8 +154,15 @@ class FulltaskSceneHandler(object):
             scene2_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=0.8),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 2")
+        if self.move_base_client.get_result()==actionlib.TerminalState.ABORTED:
+            self.path_finish_event.set()
         self.path_finish_event.wait()
         
+        if self._as.is_preempt_requested():
+            self.move_base_client.cancel_all_goals()
+            print("return")
+            return
+
         self.do_try()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
@@ -156,6 +172,10 @@ class FulltaskSceneHandler(object):
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+
+        if self._as.is_preempt_requested():
+            self.move_base_client.cancel_all_goals()
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
