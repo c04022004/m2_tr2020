@@ -10,12 +10,17 @@ from visualization_msgs.msg import Marker, MarkerArray
 from laser_line_extraction.msg import LineSegment, LineSegmentList
 
 
+try_spot_side_dist = 0.475
+try_spot_base_line_dist = 0.58
+try_spot_hypot_line_dist = 0.75
+
 corners_pub = None
-base_line_pub = None
-side_line_pub = None
+hypot_line_pub = None
 try_spot_center_pub = None
 shift_z = pi/2
-tolerance = 0.05
+tolerance = 0.15
+intercept_dist_tolerance = 0.7
+diff_to_try_spot_dim_tolerance = 0.05
 
 
 class Line:
@@ -74,7 +79,21 @@ def pts_centeroid(pts_np):
     return (sum_x/length, sum_y/length)
 
 
+def extend_line_dist(closer_pt, further_pt, line_len, target_len):
+    extended_x = closer_pt[0] + (further_pt[0]-closer_pt[0])/line_len*target_len
+    extended_y = closer_pt[1] + (further_pt[1]-closer_pt[1])/line_len*target_len
+    return (extended_x, extended_y)
+
+
 def line_segments_cb(lines_msg):
+    #         -----
+    #         |   |
+    #     -----   -----
+    #
+    #          RP
+    # ^ x
+    # |
+    # ---> y
     lines = []
     lines_count = 0
     interceptions = []
@@ -88,22 +107,24 @@ def line_segments_cb(lines_msg):
         if lines_count < 2:
             continue
         for i in range(lines_count-1):
-            if abs(extracted_line.angle_degree - lines[i].angle_degree) < 45.0:
+            # Adjacent lines of rectangle should be right angle 
+            if abs(extracted_line.angle_degree - lines[i].angle_degree) < 80.0:
                 continue
-            if abs(extracted_line.angle_degree - lines[i].angle_degree) > 135.0:
+            if abs(extracted_line.angle_degree - lines[i].angle_degree) > 100.0:
                 continue
             intercept = line_intersection(extracted_line, lines[i])
             if intercept[0] is None:
                 continue
-            if intercept[0]>2.0 or intercept[1]>2.0:
+            # Ignore intercepts that are too far away
+            if np.hypot(intercept[0],intercept[1]) > 1.5:
                 continue
             lineA_0 = np.hypot(intercept[0]-extracted_line.pt0[0], intercept[1]-extracted_line.pt0[1])
             lineA_1 = np.hypot(intercept[0]-extracted_line.pt1[0], intercept[1]-extracted_line.pt1[1])
-            if lineA_0 > 0.7 and lineA_1 > 0.7:
+            if lineA_0 > intercept_dist_tolerance and lineA_1 > intercept_dist_tolerance:
                 continue
             lineB_0 = np.hypot(intercept[0]-lines[i].pt0[0], intercept[1]-lines[i].pt0[1])
             lineB_1 = np.hypot(intercept[0]-lines[i].pt1[0], intercept[1]-lines[i].pt1[1])
-            if lineB_0 > 0.7 and lineB_1 > 0.7:
+            if lineB_0 > intercept_dist_tolerance and lineB_1 > intercept_dist_tolerance:
                 continue
             interceptions.append(intercept)
 
@@ -119,23 +140,13 @@ def line_segments_cb(lines_msg):
         result_pts.append(pts_centeroid(point_tree.data[group_idxs]) )
         clustered_pts += group_idxs
 
-    # Remove outliers
-    tmp_pts = []
-    for point in result_pts:
-        distance_to_origin = np.hypot(point[0],point[1])
-        # Only for locating try_spot
-        if distance_to_origin > 1.5:
-            continue
-        tmp_pts.append(point)
-    result_pts = tmp_pts
-
     markerArray = MarkerArray()
     for idx, point in enumerate(result_pts):
         marker = Marker()
         marker.header.frame_id = "laser"
         marker.id = idx
         marker.type = marker.SPHERE
-        marker.action = marker.ADD
+        marker.action = marker.MODIFY
         marker.scale.x = 0.1
         marker.scale.y = 0.1
         marker.scale.z = 0.1
@@ -161,52 +172,112 @@ def line_segments_cb(lines_msg):
     diff_to_try_spot_wid = abs(nearest_line.length - 0.475)
     is_base_line = False
     is_side_line = False
-    if diff_to_try_spot_len < diff_to_try_spot_wid and diff_to_try_spot_len < tolerance:
+    if diff_to_try_spot_len < diff_to_try_spot_wid and diff_to_try_spot_len < diff_to_try_spot_dim_tolerance:
         is_base_line = True
         pt_polar_form = nearest_line.cartesian2PolarRad()
         pt_to_pub = Point(pt_polar_form[0], pt_polar_form[1], 0)
-        base_line_pub.publish(pt_to_pub)
-        # print(pt_polar_form)
-    if diff_to_try_spot_wid < diff_to_try_spot_len and diff_to_try_spot_wid < tolerance:
+        # base_line_pub.publish(pt_to_pub)
+    if diff_to_try_spot_wid < diff_to_try_spot_len and diff_to_try_spot_wid < diff_to_try_spot_dim_tolerance:
         is_side_line = True
         pt_polar_form = nearest_line.cartesian2PolarRad()
         pt_to_pub = Point(pt_polar_form[0], pt_polar_form[1], 0)
-        side_line_pub.publish(pt_to_pub)
-        # print(pt_polar_form)
-    if len(result_pts) < 3:
-        return
+        # side_line_pub.publish(pt_to_pub)
+
+    try_spot_hypot_list = []
     if is_base_line or is_side_line:
-        for idx in sorted_idx[2:]:
-            line = Line(result_pts[idx][0], result_pts[idx][1], p0[0], p0[1], shift_z)
-            diff_to_try_spot_side = abs(line.length - 0.475) if is_base_line else \
-                abs(line.length - 0.58)
-            diff_to_try_spot_hypot = abs(line.length - 0.7497) # sqrt(0.58**2 + 0.475**2)
-            try_spot_center = None
-            if diff_to_try_spot_hypot < tolerance:
-                try_spot_center = line.center()
-            if diff_to_try_spot_side < tolerance:
-                line = Line(result_pts[idx][0], result_pts[idx][1], 
-                    p1[0], p1[1], shift_z)
-                try_spot_center = line.center()
-            if try_spot_center is None:
+        for line in lines:
+            # Remove outliers that are longer than expected length
+            if is_base_line and line.length>(try_spot_side_dist+diff_to_try_spot_dim_tolerance):
                 continue
-            length_to_center = np.hypot(try_spot_center[0],try_spot_center[1])
-            angle_rad = math.atan2(-try_spot_center[1], -try_spot_center[0]) + shift_z
-            angle_rad += pi if angle_rad < 0.0 else 0.0 # Confine the angle range to [0, pi]
-            # print((length_to_center, angle_rad))
-            pt_to_pub = Point(length_to_center, angle_rad, 0)
-            try_spot_center_pub.publish(pt_to_pub)
-            break
+            if is_side_line and line.length>(try_spot_base_line_dist+diff_to_try_spot_dim_tolerance):
+                continue
+            pt0_to_intercept0_dist = np.hypot(line.pt0[0]-p0[0], line.pt0[1]-p0[1])
+            pt0_to_intercept1_dist = np.hypot(line.pt0[0]-p1[0], line.pt0[1]-p1[1])
+            pt1_to_intercept0_dist = np.hypot(line.pt1[0]-p0[0], line.pt1[1]-p0[1])
+            pt1_to_intercept1_dist = np.hypot(line.pt1[0]-p1[0], line.pt1[1]-p1[1])
+            # Remove lines connected to the 2 intercepts
+            if pt0_to_intercept0_dist<tolerance and pt1_to_intercept1_dist<tolerance:
+                continue
+            if pt0_to_intercept1_dist<tolerance and pt1_to_intercept0_dist<tolerance:
+                continue
+            furthest_pt = None
+            opp_intercept_pt = None
+            if pt0_to_intercept0_dist<tolerance or pt0_to_intercept1_dist<tolerance:
+                opp_intercept_idx = 1 if pt0_to_intercept0_dist<tolerance else 0
+                opp_intercept_pt = p0 if opp_intercept_idx==0 else p1
+                pt0_to_origin_dist = np.hypot(line.pt0[0], line.pt0[1])
+                opp_intercept_pt_to_origin_dist = np.hypot(opp_intercept_pt[0], opp_intercept_pt[1])
+                # Remove presumed base_line if it is closer than side line
+                if pt0_to_origin_dist<opp_intercept_pt_to_origin_dist and is_side_line:
+                    continue
+                if is_base_line:
+                    furthest_pt = extend_line_dist(line.pt0, line.pt1, line.length, try_spot_side_dist)
+                else:
+                    furthest_pt = extend_line_dist(line.pt0, line.pt1, line.length, try_spot_base_line_dist)
+            if pt1_to_intercept0_dist<tolerance or pt1_to_intercept1_dist<tolerance:
+                opp_intercept_idx = 1 if pt1_to_intercept0_dist<tolerance else 0
+                opp_intercept_pt = p0 if opp_intercept_idx==0 else p1
+                pt1_to_origin_dist = np.hypot(line.pt1[0], line.pt1[1])
+                opp_intercept_pt_to_origin_dist = np.hypot(opp_intercept_pt[0], opp_intercept_pt[1])
+                # Remove presumed base_line if it is closer than side line
+                if pt1_to_origin_dist<opp_intercept_pt_to_origin_dist and is_side_line:
+                    continue
+                if is_base_line:
+                    furthest_pt = extend_line_dist(line.pt1, line.pt0, line.length, try_spot_side_dist)
+                else:
+                    furthest_pt = extend_line_dist(line.pt1, line.pt0, line.length, try_spot_base_line_dist)
+            if furthest_pt is None:
+                continue
+            try_spot_hypot_line = Line(furthest_pt[0], furthest_pt[1], opp_intercept_pt[0], opp_intercept_pt[1], shift_z)
+            if try_spot_hypot_line.length < (try_spot_hypot_line_dist-diff_to_try_spot_dim_tolerance) or \
+            try_spot_hypot_line.length > (try_spot_hypot_line_dist+diff_to_try_spot_dim_tolerance):
+                continue
+            try_spot_hypot_list.append(try_spot_hypot_line)
+
+    markerArray = MarkerArray()
+    for idx, try_spot_hypot_line in enumerate(try_spot_hypot_list):
+        marker = Marker()
+        marker.header.frame_id = "laser"
+        marker.id = idx
+        marker.type = marker.LINE_STRIP
+        marker.action = marker.MODIFY
+        marker.scale.x = 0.01
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        marker.color.g = 1.0
+        marker.color.b = 1.0
+        point = Point()
+        point.x = try_spot_hypot_line.pt0[0]
+        point.y = try_spot_hypot_line.pt0[1]
+        marker.points.append(point)
+        point = Point()
+        point.x = try_spot_hypot_line.pt1[0]
+        point.y = try_spot_hypot_line.pt1[1]
+        marker.points.append(point)
+        marker.lifetime = rospy.rostime.Duration(0.2)
+        markerArray.markers.append(marker)
+    hypot_line_pub.publish(markerArray)
+
+    if len(try_spot_hypot_list)==0:
+        return
+    try_spot_center_list = []
+    for hypot_line in try_spot_hypot_list:
+        try_spot_center_list.append(hypot_line.center())
+    try_spot_center_np = np.asarray(try_spot_center_list)
+    center_pt = pts_centeroid(try_spot_center_np)
+    point = Point()
+    point.x = center_pt[0]
+    point.y = center_pt[1]
+    try_spot_center_pub.publish(point)
 
 
 rospy.init_node("lidar_try_spot_detector")
 corners_pub = rospy.Publisher("/corners_marker", MarkerArray, queue_size=1)
-base_line_pub = rospy.Publisher("/try_spot_base_line", Point, queue_size=1)
-side_line_pub = rospy.Publisher("/try_spot_side_line", Point, queue_size=1)
+hypot_line_pub = rospy.Publisher("/hypot_line_marker", MarkerArray, queue_size=1)
 try_spot_center_pub = rospy.Publisher("/try_spot_center", Point, queue_size=1)
 rospy.Subscriber("/line_segments", LineSegmentList, line_segments_cb)
 
 
-rate = rospy.Rate(100)
+rate = rospy.Rate(10)
 while not rospy.is_shutdown():
     rate.sleep()
