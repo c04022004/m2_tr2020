@@ -17,7 +17,7 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-MAX_SPEED = 5.0
+MAX_SPEED = 1.0
 
 class FulltaskSceneHandler(object):
 
@@ -61,6 +61,13 @@ class FulltaskSceneHandler(object):
                 self.move_base_client.get_result()==actionlib.TerminalState.ABORTED):
                 event.set() # python threading event
         return intermediate_func
+    
+    def gen_shutdown_func(self, event):
+        def shutdown_func():
+            print("shutdown request")
+            event.set()
+            self._as.set_preempted()
+        return shutdown_func
 
     def gen_try_intermediate_func(self, event, try_y):
         # try_polygon_points = [
@@ -153,12 +160,14 @@ class FulltaskSceneHandler(object):
         self.move_base_client.send_goal(
             scene2_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=0.8),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 2")
         if self.move_base_client.get_result()==actionlib.TerminalState.ABORTED:
             self.path_finish_event.set()
         self.path_finish_event.wait()
+        print("past event " + str(self._as.is_active()))
         
-        if self._as.is_preempt_requested():
+        if not self._as.is_active() or self._as.is_preempt_requested() or rospy.is_shutdown():
             self.move_base_client.cancel_all_goals()
             print("return")
             return
