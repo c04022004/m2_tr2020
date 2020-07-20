@@ -8,13 +8,8 @@
 
     <node name = "ps4_handler" 
         pkg = "m2_tr2020"
-        type = "ps4_handler.py" 
-        output = "screen" 
+        type = "ps4_handler.py"
+        output = "screen"
         respawn = "true" />
 
-    <!-- <node name = "ps4_handler" 
-        pkg = "m2_chassis_utils"
-        type = "ps4_mr_controller.py" 
-        output = "screen" 
-        respawn = "true" /> -->
 </launch>
