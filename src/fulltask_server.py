@@ -131,9 +131,17 @@ class FulltaskSceneHandler(object):
             scene0_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene0_f_cfg.goalConstructor(speed=MAX_SPEED*1.0, radius=2.75, stop_kI=0.00001, stop_kD=0.14, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
@@ -147,19 +155,36 @@ class FulltaskSceneHandler(object):
             scene1_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene1_f_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=2.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 1")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
         
         self.do_try()
+
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene1_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene1_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
@@ -217,19 +242,36 @@ class FulltaskSceneHandler(object):
             scene3_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene3_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=2.0, velocity_shift_kP=6.0, curvature_penalty_kP=0.8),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 3")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
         
         self.do_try()
+ 
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene3_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene3_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=2.0, velocity_shift_kP=6.0,curvature_penalty_kP=0.8),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
@@ -243,17 +285,28 @@ class FulltaskSceneHandler(object):
             scene4_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene4_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 4")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
         
         self.do_try()
+
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene4_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene4_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
 
@@ -269,19 +322,36 @@ class FulltaskSceneHandler(object):
             scene5_f_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene5_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 5")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
         
         self.do_try()
+
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene5_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
@@ -295,9 +365,17 @@ class FulltaskSceneHandler(object):
             scene0_b_cfg.knotsFlipX()
         self.move_base_client.send_goal(
             scene0_b_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=1.5, stop_kI=0.00001, stop_kD=0.2, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to TRSZ")
         self.path_finish_event.wait()
+
+        if not self._as.is_active() :
+            rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+            rospy.logwarn("_as.is_active(): %d"%(self._as.is_active()))
+            rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
+            return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
