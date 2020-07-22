@@ -71,18 +71,11 @@ if __name__ == "__main__":
         if limit_switch_states[0] and limit_switch_states[1]:
             reset_y_value = Float32(10.0-initial_value["init_y"])
             odom_sety_pub.publish(reset_y_value)
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
         if limit_switch_states[2] and limit_switch_states[3]:
             reset_y_value = Float32(initial_value["init_y"])
             odom_sety_pub.publish(reset_y_value)
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
         if limit_switch_states[4] and limit_switch_states[5]:
             reset_x_value = Float32(initial_value["init_x"])
             odom_setx_pub.publish(reset_x_value) 
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
-
 
         rate.sleep()

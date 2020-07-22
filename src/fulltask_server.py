@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import rospy, actionlib, threading
 from m2_move_base.msg import *
+from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 from geometry_msgs.msg import *
 from visualization_msgs.msg import Marker
-from std_srvs.srv import Trigger
 from math import pi
 from m2_tr2020.msg import *
 import time
@@ -18,14 +19,17 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-MAX_SPEED = 2.0
+MAX_SPEED = 5.0
 
 class FulltaskSceneHandler(object):
 
     def __init__(self):
-        stop_srv = rospy.Service('stop_srv', Trigger, self.stop_cb)
+        self.stop_srv = rospy.Service('stop_srv', Trigger, self.stop_cb)
         self.move_base_client = actionlib.SimpleActionClient('Switch', SwitchModeAction)
         self.move_base_client.wait_for_server()
+
+        self.io_pub = rospy.Publisher('io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
+        self.delayed_lifter_thread = None
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
@@ -120,7 +124,18 @@ class FulltaskSceneHandler(object):
         return intermediate_func
 
     def do_try(self):
-        time.sleep(0.5)
+        self.io_pub.publish(1)
+        time.sleep(1.0)
+        if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
+            self.delayed_lifter_thread.cancel()
+        self.delayed_lifter_thread = threading.Timer(0.25, self.latch_lock)
+        self.delayed_lifter_thread.start()
+    
+    def latch_io(self, output=0):
+        self.io_pub.publish(output)
+
+    def latch_lock(self):
+        self.latch_io(0) # retract
 
     def scene_0(self):
         rospy.loginfo("Fulltask scene 0 start!")
@@ -136,6 +151,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -160,6 +176,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 1")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -179,6 +196,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
         
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -203,6 +221,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 2")
         self.path_finish_event.wait()
+        self.latch_lock()
         
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -222,6 +241,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active():
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -247,6 +267,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 3")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -266,6 +287,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -290,6 +312,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 4")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -309,6 +332,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
@@ -327,6 +351,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to Try Spot 5")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -346,6 +371,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
@@ -370,6 +396,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to TRSZ")
         self.path_finish_event.wait()
+        self.latch_lock()
 
         if not self._as.is_active() :
             rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
