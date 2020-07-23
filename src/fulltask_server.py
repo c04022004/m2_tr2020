@@ -28,7 +28,7 @@ class FulltaskSceneHandler(object):
         self.move_base_client = actionlib.SimpleActionClient('Switch', SwitchModeAction)
         self.move_base_client.wait_for_server()
 
-        self.io_pub = rospy.Publisher('io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
+        self.io_pub = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.delayed_lifter_thread = None
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)

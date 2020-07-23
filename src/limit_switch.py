@@ -44,7 +44,7 @@ class IOState(object):
 limit_switches = [ IOState(id=i) for i in range(8)]
 subscribers =[]
 for i in range(8):
-    subscribers.append(rospy.Subscriber("/io_"+str(i)+"/get_state", Bool, limit_switches[i].state_cb))
+    subscribers.append(rospy.Subscriber("/io_board1/io_"+str(i)+"/get_state", Bool, limit_switches[i].state_cb))
 
 odom_setx_pub = rospy.Publisher("/odom_set_x", Float32)
 odom_sety_pub = rospy.Publisher("/odom_set_y", Float32)
