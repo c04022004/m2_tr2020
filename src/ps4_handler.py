@@ -2,6 +2,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from actionlib_msgs.msg import GoalID
+from std_srvs.srv import Trigger, SetBool
 from m2_chassis_utils.msg import ChannelTwist
 from m2_ps4.msg import Ps4Data
 from std_msgs.msg import Bool
@@ -17,7 +18,12 @@ old_data = Ps4Data()
 def ps4_cb(ps4_data): # update ps4 data
     
     global direct,old_data
-    if ps4_data.l1:
+    if ps4_data.l1 and ps4_data.r1:
+        if ps4_data.share and not old_data.share:
+            try_call_motors(False)
+        if ps4_data.options and not old_data.options:
+            try_call_motors(True)
+    elif ps4_data.l1:
         direct.linear.y = max_linear_speed * ps4_data.hat_ly
         direct.linear.x = max_linear_speed * ps4_data.hat_lx * -1
         direct.angular.z = max_rotational_speed * ps4_data.hat_rx
@@ -57,6 +63,15 @@ def ps4_cb(ps4_data): # update ps4 data
             fulltask_pub.publish(goal)
     old_data = ps4_data
 
+def try_call_motors(set_bool):
+    global motor_srvs
+    for i in range(4):
+        try:
+            rospy.wait_for_service('/motor_base_%d/set_enable_state'%i, timeout=0.1)
+            motor_srvs[i](set_bool)
+        except rospy.ROSException:
+            rospy.logwarn('/motor_base_%d/set_enable_state timed out!'%i)
+
 rospy.init_node('ps4_vel_controller')
 vel_pub = rospy.Publisher('/chan_cmd_vel', ChannelTwist, queue_size = 1)
 tr_cancel_pub = rospy.Publisher('/tr_server/cancel', GoalID, queue_size = 1)
@@ -64,6 +79,9 @@ sw_cancel_pub = rospy.Publisher('/Switch/cancel', GoalID, queue_size = 1)
 ps4_sub = rospy.Subscriber('input/ps4_data', Ps4Data, ps4_cb)
 
 io_pub = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1)
+motor_srvs = [None for i in range(4)]
+for i in range(4):
+    motor_srvs[i] = rospy.ServiceProxy('/motor_base_%d/set_enable_state'%i, SetBool)
 fulltask_pub = rospy.Publisher('/tr_server/goal', FulltaskActionGoal, queue_size=1)
 
 rospy.spin()
