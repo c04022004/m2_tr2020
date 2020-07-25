@@ -61,6 +61,14 @@ def ps4_cb(ps4_data): # update ps4 data
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 5
             fulltask_pub.publish(goal)
+        if (ps4_data.dpad_x == -1) and not old_data.dpad_x:
+            goal = FulltaskActionGoal()
+            goal.goal.scene_id = 7
+            fulltask_pub.publish(goal)
+        if (ps4_data.dpad_x ==  1) and not old_data.dpad_x:
+            goal = FulltaskActionGoal()
+            goal.goal.scene_id = 8
+            fulltask_pub.publish(goal)
     old_data = ps4_data
 
 def try_call_motors(set_bool):

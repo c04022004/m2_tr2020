@@ -9,6 +9,7 @@ MATCH_BLUE = 2
 
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
+POINT_D = (1.1, 3.5)
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
 tryx_offset = 0.10 # reserve for overshoot
@@ -17,6 +18,10 @@ POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
 POINT_4 = (5.81-tryx_offset, 3.09+3.0*0.03+3*1.3)
 POINT_5 = (5.81-tryx_offset, 3.09+4.0*0.03+4*1.3)
+
+# Point list: (5.57402,7.08162),(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),(0.996634,3.76607)
+# Point list: (5.63634,8.37777),(5.25668,8.31206),(3.53799,6.77407),(2.06884,5.34484),(1.03174,3.80271)
+
 
 # CHK_PTS = [
 #     [ POINT_S, POINT_C ], # scene 1
@@ -52,12 +57,12 @@ CHK_PTS = [
     # scene 4
     {
         'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], 
-        'b_path': [ POINT_4,(4.34558,4.87455),(2.65163,2.93525), POINT_C ]
+        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),POINT_D ]
     },
     # scene 5
     {
         'f_path': [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_5 ], 
-        'b_path': [ POINT_5,(1.19297,3.55089), POINT_C ]
+        'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
     }
 ]
 
@@ -68,7 +73,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     point_density = 1000
 
     velocity_z_kP = 5.0
-    velocity_z_kI = 10.0
+    velocity_z_kI = 0.0
     velocity_z_ilimit = 1.0
     velocity_z_max = 3.0
     target_z = -pi/2
@@ -81,7 +86,6 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     curvature_penalty_kP = 0.4
 
     stop_type = PurePursuitData.STOP_PID
-    stop_pid_integral_abs_max = 0.0
     stop_pid_radius = 2.0
 
     field_color = MATCH_RED
@@ -219,6 +223,8 @@ scene3_s_cfg = PurePidConfig(POINT_3, -pi/2)
 scene4_s_cfg = PurePidConfig(POINT_4, -pi/2)
 scene5_s_cfg = PurePidConfig(POINT_5, -pi/2)
 scene6_s_cfg = PurePidConfig(POINT_S, -pi/2)
+scene7_s_cfg = PurePidConfig(POINT_C, -pi/2)
+scene8_s_cfg = PurePidConfig(POINT_D, -pi/2)
 
 scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
 scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
