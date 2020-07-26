@@ -6,6 +6,16 @@
 	    <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
     </include> -->
 
-    <node name = "mode_swticher" pkg = "m2_move_base" type = "mode_switcher.py" output = "screen" respawn = "true" />
-    <node name = "tr_server" pkg = "m2_tr2020" type = "fulltask_server.py" output = "screen" respawn = "true" />
+    <node name = "mode_swticher"
+        pkg = "m2_move_base"
+        type = "mode_switcher.py"
+        output = "screen"
+        respawn = "true" />
+
+    <node name = "tr_server"
+        pkg = "m2_tr2020"
+        type = "fulltask_server.py"
+        output = "screen"
+        respawn = "true" />
+
 </launch>

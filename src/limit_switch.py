@@ -44,7 +44,7 @@ class IOState(object):
 limit_switches = [ IOState(id=i) for i in range(8)]
 subscribers =[]
 for i in range(8):
-    subscribers.append(rospy.Subscriber("/io_"+str(i)+"/get_state", Bool, limit_switches[i].state_cb))
+    subscribers.append(rospy.Subscriber("/io_board1/io_"+str(i)+"/get_state", Bool, limit_switches[i].state_cb))
 
 odom_setx_pub = rospy.Publisher("/odom_set_x", Float32)
 odom_sety_pub = rospy.Publisher("/odom_set_y", Float32)
@@ -68,21 +68,14 @@ if __name__ == "__main__":
         limit_switch_states = [ i.get_state() for i in limit_switches]
         rospy.loginfo(limit_switch_states)
 
-        if limit_switch_states[0] and limit_switch_states[1]:
-            reset_y_value = Float32(10.0-initial_value["init_y"])
-            odom_sety_pub.publish(reset_y_value)
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
-        if limit_switch_states[2] and limit_switch_states[3]:
-            reset_y_value = Float32(initial_value["init_y"])
-            odom_sety_pub.publish(reset_y_value)
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
+        # if limit_switch_states[0] and limit_switch_states[1]:
+        #     reset_y_value = Float32(10.0-initial_value["init_y"])
+        #     odom_sety_pub.publish(reset_y_value)
+        # if limit_switch_states[2] and limit_switch_states[3]:
+        #     reset_y_value = Float32(initial_value["init_y"])
+        #     odom_sety_pub.publish(reset_y_value)
         if limit_switch_states[4] and limit_switch_states[5]:
             reset_x_value = Float32(initial_value["init_x"])
             odom_setx_pub.publish(reset_x_value) 
-            reset_z_value = Float32(initial_value["init_z"])
-            odom_setz_pub.publish(reset_z_value)
-
 
         rate.sleep()
