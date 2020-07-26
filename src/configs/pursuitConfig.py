@@ -99,11 +99,11 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.raw_pts = raw_pts
         self.chk_pts = [Point(x=point[0], y=point[1]) for point in self.raw_pts]
 
-    def setFieldColor(color):
+    def setFieldColor(self, color):
         if color not in [MATCH_RED, MATCH_BLUE]:
             return
         if self.field_color != color:
-            knotsFlipX()
+            self.knotsFlipX()
             self.field_color = color
 
     def knotsFlipX(self):
@@ -135,6 +135,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 
         pure_pursuit_data.stop_type = self.stop_type
         pure_pursuit_data.stop_radius = radius
+        pure_pursuit_data.stop_deadzone = 0.05
         pure_pursuit_data.stop_min_speed = stop_min_speed
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
@@ -143,8 +144,10 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 class PurePidConfig: # Default setting of MATCH_RED
     label = "pure_pid"
 
-    velocity_z_max = 1.0
-    velocity_z_kP = 2.0
+    velocity_z_max = 1.5
+    velocity_z_kP = 3.0
+    velocity_z_kI = 0.001
+    velocity_z_kD = 0.1
 
     kP = 0.0
     kI = 0.0
@@ -158,11 +161,11 @@ class PurePidConfig: # Default setting of MATCH_RED
         self.target_y = target_pos[1]
         self.target_z = target_z
 
-    def setFieldColor(color):
+    def setFieldColor(self, color):
         if color not in [MATCH_RED, MATCH_BLUE]:
             return
         if self.field_color != color:
-            positionFlipX()
+            self.positionFlipX()
             self.field_color = color
 
     def positionFlipX(self):
@@ -181,11 +184,17 @@ class PurePidConfig: # Default setting of MATCH_RED
 
         pure_pid_data.velocity_z_max = self.velocity_z_max
         pure_pid_data.velocity_z_kP = self.velocity_z_kP
+        pure_pid_data.velocity_z_kI = self.velocity_z_kI
+        pure_pid_data.velocity_z_kD = self.velocity_z_kD
 
         pure_pid_data.kP = kP
         pure_pid_data.kI = kI
         pure_pid_data.kD = kD
         pure_pid_data.integral_absMax = self.integral_absMax
+
+        pure_pid_data.deadzone_x = 0.02
+        pure_pid_data.deadzone_y = 0.02
+        pure_pid_data.deadzone_z = 0.0
 
         pure_pid_data.proportional_on_error = PonE
 

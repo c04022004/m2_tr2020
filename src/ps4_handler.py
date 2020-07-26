@@ -61,11 +61,11 @@ def ps4_cb(ps4_data): # update ps4 data
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 5
             fulltask_pub.publish(goal)
-        if (ps4_data.dpad_x == -1) and not old_data.dpad_x:
+        if (ps4_data.dpad_y == -1) and not old_data.dpad_y:
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 7
             fulltask_pub.publish(goal)
-        if (ps4_data.dpad_x ==  1) and not old_data.dpad_x:
+        if (ps4_data.dpad_y ==  1) and not old_data.dpad_y:
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 8
             fulltask_pub.publish(goal)

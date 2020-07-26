@@ -537,10 +537,13 @@ class FulltaskSceneHandler(object):
 
 if __name__ == "__main__":
     rospy.init_node('tr_server')
-    color = rospy.get_param("~color", "red")
+    color = rospy.get_param("~color", "blue")
     if color == "red":
         match_color = MATCH_RED
-    else:
+    elif color == "blue":
         match_color = MATCH_BLUE
+    else:
+        match_color = MATCH_RED
+        rospy.logwarn("No valid color specified, defaulting to RED")
     fulltask_server = FulltaskSceneHandler()
     rospy.spin()
