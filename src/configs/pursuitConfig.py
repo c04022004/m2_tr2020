@@ -3,7 +3,6 @@ from math import pi
 from geometry_msgs.msg import *
 from m2_move_base.msg import *
 
-
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
 POINT_1 = (5.6, 3.09+0.5*0.03+0*1.3)
@@ -51,9 +50,52 @@ CHK_PTS = [
     # scene 5
     {
         'f_path': [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_5 ], 
-        'b_path': [ POINT_5,(1.19297,3.55089), POINT_C ]
+        'b_path': [ POINT_5,(5.19676,7.57945),(4.55161,5.41157),(3.50453,4.11369), POINT_C ]
     }
 ]
+
+class PurePidConfig: # Default setting of MATCH_RED
+    label = "pure_pid"
+
+    velocity_z_max = 1.0
+    velocity_z_kP = 2.0
+
+    kP = 0.0
+    kI = 0.0
+    kD = 0.0
+    integral_absMax = 100.0
+
+    def __init__(self, target_pos, target_z):
+        self.target_x = target_pos[0]
+        self.target_y = target_pos[1]
+        self.target_z = target_z
+
+    def positionFlipX(self):
+        self.target_x = 13.3 - self.target_x
+        self.target_z = -self.target_z
+
+    def goalConstructor(self, speed, kP, kI, kD, PonE=True):
+        pure_pid_data = PurePidData()
+        pure_pid_data.label = self.label
+
+        pure_pid_data.target_x = self.target_x
+        pure_pid_data.target_y = self.target_y
+        pure_pid_data.target_z = self.target_z
+
+        pure_pid_data.velocity_xy_magnitude = speed
+
+        pure_pid_data.velocity_z_max = self.velocity_z_max
+        pure_pid_data.velocity_z_kP = self.velocity_z_kP
+
+        pure_pid_data.kP = kP
+        pure_pid_data.kI = kI
+        pure_pid_data.kD = kD
+        pure_pid_data.integral_absMax = self.integral_absMax
+
+        pure_pid_data.proportional_on_error = PonE
+
+        goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PID, pure_pid_data=pure_pid_data)
+        return goal
 
 class PurePursuitConfig: # Default setting of MATCH_RED
     spline_label = "cubic"
@@ -91,12 +133,16 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def goalConstructor(self, speed=2.0, radius=1.0, stop_kI=0.0, stop_kD=0.0, velocity_shift_kP=6.0, curvature_penalty_kP=0.4):
+    def goalConstructor(self, pure_pid = False, speed=2.0, radius=1.0, stop_kI=0.0, stop_kD=0.0, velocity_shift_kP=6.0, curvature_penalty_kP=0.4):
+        print(pure_pid, speed, radius, stop_kI, stop_kD, velocity_shift_kP, curvature_penalty_kP)
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
 
-        pure_pursuit_data.knots = self.chk_pts
+        if(pure_pid):
+          pure_pursuit_data.knots = self.chk_pts[:-1]
+        else:
+          pure_pursuit_data.knots = self.chk_pts
         pure_pursuit_data.point_density = self.point_density
         
         pure_pursuit_data.velocity_xy_magnitude = speed
@@ -122,16 +168,30 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
         return goal
 
-scene0_f_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['f_path'])
-scene1_f_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['f_path'])
-scene2_f_cfg = PurePursuitConfig("cubic", CHK_PTS[2]['f_path'])
-scene3_f_cfg = PurePursuitConfig("cubic", CHK_PTS[3]['f_path'])
-scene4_f_cfg = PurePursuitConfig("cubic", CHK_PTS[4]['f_path'])
-scene5_f_cfg = PurePursuitConfig("cubic", CHK_PTS[5]['f_path'])
+# pursuit_0_f = PurePursuitConfig("cubic", CHK_PTS[0]['f_path'])
+# pursuit_1_f = PurePursuitConfig("cubic", CHK_PTS[1]['f_path'])
+# pursuit_2_f = PurePursuitConfig("cubic", CHK_PTS[2]['f_path'])
+# pursuit_3_f = PurePursuitConfig("cubic", CHK_PTS[3]['f_path'])
+# pursuit_4_f = PurePursuitConfig("cubic", CHK_PTS[4]['f_path'])
+# pursuit_5_f = PurePursuitConfig("cubic", CHK_PTS[5]['f_path'])
 
-scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
-scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
-scene2_b_cfg = PurePursuitConfig("cubic", CHK_PTS[2]['b_path'])
-scene3_b_cfg = PurePursuitConfig("cubic", CHK_PTS[3]['b_path'])
-scene4_b_cfg = PurePursuitConfig("cubic", CHK_PTS[4]['b_path'])
-scene5_b_cfg = PurePursuitConfig("cubic", CHK_PTS[5]['b_path'])
+# pursuit_0_b = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
+# pursuit_1_b = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
+# pursuit_2_b = PurePursuitConfig("cubic", CHK_PTS[2]['b_path'])
+# pursuit_3_b = PurePursuitConfig("cubic", CHK_PTS[3]['b_path'])
+# pursuit_4_b = PurePursuitConfig("cubic", CHK_PTS[4]['b_path'])
+# pursuit_5_b = PurePursuitConfig("cubic", CHK_PTS[5]['b_path'])
+
+# pid_0_f = PurePidConfig(CHK_PTS[0]['f_path'][-1])
+# pid_1_f = PurePidConfig(CHK_PTS[1]['f_path'][-1])
+# pid_2_f = PurePidConfig(CHK_PTS[2]['f_path'][-1])
+# pid_3_f = PurePidConfig(CHK_PTS[3]['f_path'][-1])
+# pid_4_f = PurePidConfig(CHK_PTS[4]['f_path'][-1])
+# pid_5_f = PurePidConfig(CHK_PTS[5]['f_path'][-1])
+
+# pid_0_b = PurePidConfig(CHK_PTS[0]['b_path'][-1])
+# pid_1_b = PurePidConfig(CHK_PTS[1]['b_path'][-1])
+# pid_2_b = PurePidConfig(CHK_PTS[2]['b_path'][-1])
+# pid_3_b = PurePidConfig(CHK_PTS[3]['b_path'][-1])
+# pid_4_b = PurePidConfig(CHK_PTS[4]['b_path'][-1])
+# pid_5_b = PurePidConfig(CHK_PTS[5]['b_path'][-1])

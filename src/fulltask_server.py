@@ -12,12 +12,11 @@ import time
 
 from configs.pursuitConfig import *
 
-
 MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
-MAX_SPEED = 2.0
+MAX_SPEED = 4.0
 
 class FulltaskSceneHandler(object):
 
@@ -90,187 +89,179 @@ class FulltaskSceneHandler(object):
         return intermediate_func
 
     def do_try(self):
-        time.sleep(0.5)
+        time.sleep(1)
 
-    def scene_0(self):
-        rospy.loginfo("Fulltask scene 0 start!")
-        start_time = time.time()
-
+    def setGoal(self, model, param):
         self.path_finish_event = threading.Event()
+
         if(match_color == MATCH_BLUE):
-            scene0_f_cfg.knotsFlipX()
+            model.knotsFlipX()
+            
         self.move_base_client.send_goal(
-            scene0_f_cfg.goalConstructor(speed=MAX_SPEED*1.0, radius=2.75, stop_kI=0.00001, stop_kD=0.14, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
+            model.goalConstructor(**param),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_1(self):
-        rospy.loginfo("Fulltask scene 1 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene1_f_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene1_f_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 1")
-        self.path_finish_event.wait()
         
+        self.path_finish_event.wait()
         self.do_try()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene1_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene1_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
 
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_2(self):
-        rospy.loginfo("Fulltask scene 2 start!")
+    def scene(self, index, segment, param):
+        rospy.loginfo("Fulltask scene {0} start!".format(index))
         start_time = time.time()
 
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene2_f_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene2_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 2")
-        self.path_finish_event.wait()
+        if(segment['pursuit_f_mode']):
+          param['pursuit_f_param']['pure_pid'] = segment['pid_f_mode']
+          self.setGoal(PurePursuitConfig("cubic", CHK_PTS[index]['f_path']), param['pursuit_f_param'])
         
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene2_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene2_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
+        if(segment['pid_f_mode']):
+          self.setGoal(PurePidConfig(CHK_PTS[index]['f_path'][-1], -pi/2), param['pid_f_param'])
+        
+        if(segment['pursuit_b_mode']):
+          param['pursuit_b_param']['pure_pid'] = segment['pid_b_mode']
+          self.setGoal(PurePursuitConfig("cubic", CHK_PTS[index]['b_path']), param['pursuit_b_param'])
+        
+        if(segment['pid_b_mode']):
+          self.setGoal(PurePidConfig(CHK_PTS[index]['b_path'][-1], -pi/2), param['pid_b_param'])
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
 
-
-    def scene_3(self):
-        rospy.loginfo("Fulltask scene 3 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene3_f_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene3_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 3")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene3_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene3_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0,curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_4(self):
-        rospy.loginfo("Fulltask scene 4 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene4_f_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene4_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 4")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene4_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene4_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_5(self):
-        rospy.loginfo("Fulltask scene 5 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene5_f_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene5_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 5")
-        self.path_finish_event.wait()
-        
-        self.do_try()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene5_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_6(self):
-        rospy.loginfo("Fulltask scene 6 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene0_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene0_b_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=1.5, stop_kI=0.00001, stop_kD=0.1, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event))
-        rospy.loginfo("goal to TRSZ")
-        self.path_finish_event.wait()
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-        
     def execute_cb(self, goal):
         # print(goal)
         if (goal.scene_id == 0):
-            self.scene_0()
+            self.scene(
+              index=0,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':False, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*1.0, 'radius':2.75, 'stop_kI':0.00001, 'stop_kD':0.14, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                }
+              }
+            )
         if (goal.scene_id == 1):
-            self.scene_1()
+            self.scene(
+              index=1,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':3.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':1.0
+                },
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':3.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':1.0
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         if (goal.scene_id == 2):
-            self.scene_2()
+            self.scene(
+              index=2,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4
+                },
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         if (goal.scene_id == 3):
-            self.scene_3()
+            self.scene(
+              index=3,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0,'curvature_penalty_kP':0.4
+                },
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0,'curvature_penalty_kP':0.4
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         if (goal.scene_id == 4):
-            self.scene_4()
+            self.scene(
+              index=4,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4
+                },
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         if (goal.scene_id == 5):
-            self.scene_5()
+            self.scene(
+              index=5,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':True, 'pid_b_mode':True,
+              },
+              param={
+                'pursuit_f_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':3.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':1.0,
+                },
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.8, 'radius':3.0, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':1.0,
+                },
+                'pid_f_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         if (goal.scene_id == 6):
-            self.scene_6()
+            self.scene(
+              index=6,
+              segment={
+                'pursuit_f_mode':True, 'pursuit_b_mode':True, 'pid_f_mode':False, 'pid_b_mode':False,
+              },
+              param={
+                'pursuit_b_param':{
+                  'speed':MAX_SPEED*0.5, 'radius':1.5, 'stop_kI':0.00001, 'stop_kD':0.1, 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4,
+                },
+                'pid_b_param':{
+                  'speed':MAX_SPEED*1.0, 'kP':3.7, 'kI':0.0, 'kD':1.0
+                },
+              }
+            )
         # if (goal.scene_id == 7):
         #     self.scene_7()
 
