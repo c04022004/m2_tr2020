@@ -537,7 +537,7 @@ class FulltaskSceneHandler(object):
 
 if __name__ == "__main__":
     rospy.init_node('tr_server')
-    color = rospy.get_param("~color", "blue")
+    color = rospy.get_param("~color", "red")
     if color == "red":
         match_color = MATCH_RED
     elif color == "blue":
