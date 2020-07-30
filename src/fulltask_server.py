@@ -19,7 +19,7 @@ from configs.pursuitConfig import *
 # MATCH_RED  = 1
 # MATCH_BLUE = 2
 
-MAX_SPEED = 3.5
+MAX_SPEED = 3.0
 
 class FulltaskSceneHandler(object):
 
@@ -436,7 +436,7 @@ class FulltaskSceneHandler(object):
         if(match_color == MATCH_BLUE):
             scene5_b_cfg.setFieldColor(MATCH_BLUE)
         self.move_base_client.send_goal(
-            scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.75),
+            scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.5),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
         rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
@@ -494,9 +494,9 @@ class FulltaskSceneHandler(object):
         self.latch_lock()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            pointC_cfg.setFieldColor(MATCH_BLUE)
+            pointD_cfg.setFieldColor(MATCH_BLUE)
         self.move_base_client.send_goal(
-            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
+            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
         rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))

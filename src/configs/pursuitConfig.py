@@ -61,8 +61,9 @@ CHK_PTS = [
     },
     # scene 5
     {
-        'f_path': [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_5 ], 
-        'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
+        'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], 
+        'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ]
+        # 'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
     }
 ]
 
@@ -232,8 +233,8 @@ scene3_s_cfg = PurePidConfig(POINT_3, -pi/2)
 scene4_s_cfg = PurePidConfig(POINT_4, -pi/2)
 scene5_s_cfg = PurePidConfig(POINT_5, -pi/2)
 scene6_s_cfg = PurePidConfig(POINT_S, -pi/2)
-scene7_cfg = PurePidConfig(POINT_C, -pi/2)
-scene8_cfg = PurePidConfig(POINT_D, -2.10)
+pointC_cfg = PurePidConfig(POINT_C, -pi/2)
+pointD_cfg = PurePidConfig(POINT_D, -2.10)
 
 scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
 scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
