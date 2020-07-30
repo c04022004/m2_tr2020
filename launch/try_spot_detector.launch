@@ -21,4 +21,11 @@
     <arg name="outlier_dist" default="0.1" />
 </include>
 
+<node name="spotfinder" pkg="m2_tr2020"
+    type="locate_try_spot.py" respawn="true" output="screen">
+    <!-- <param name="lidar_offset_x" type="double" value="0.00"/>
+    <param name="lidar_offset_y" type="double" value="0.00"/>
+    <param name="lidar_offset_z" type="double" value="0.00"/> -->
+</node>
+
 </launch>

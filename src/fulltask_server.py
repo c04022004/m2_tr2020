@@ -145,7 +145,6 @@ class FulltaskSceneHandler(object):
         return False
 
     def do_try(self):
-<<<<<<< Updated upstream
         self.io_pub.publish(1)
         time.sleep(1.0)
         self.latch_lock()
@@ -159,9 +158,6 @@ class FulltaskSceneHandler(object):
 
     def latch_lock(self):
         self.latch_io(0) # retract
-=======
-        time.sleep(5.0)
->>>>>>> Stashed changes
 
     def scene_0(self):
         rospy.loginfo("Fulltask scene 0 start!")
