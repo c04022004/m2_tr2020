@@ -1,5 +1,5 @@
 <launch>
-    <arg name = "joy" default = "/dev/ds4blue"/>
+    <arg name = "joy" default = "/dev/input/js0"/>
 
     <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
         <arg name = "joy" value = "$(arg joy)"/>

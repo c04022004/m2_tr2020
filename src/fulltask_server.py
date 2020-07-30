@@ -19,7 +19,7 @@ from configs.pursuitConfig import *
 # MATCH_RED  = 1
 # MATCH_BLUE = 2
 
-MAX_SPEED = 5.0
+MAX_SPEED = 3.5
 
 class FulltaskSceneHandler(object):
 
@@ -475,9 +475,9 @@ class FulltaskSceneHandler(object):
         self.latch_lock()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            scene7_s_cfg.setFieldColor(MATCH_BLUE)
+            pointC_cfg.setFieldColor(MATCH_BLUE)
         self.move_base_client.send_goal(
-            scene7_s_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
+            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
         rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
@@ -494,9 +494,9 @@ class FulltaskSceneHandler(object):
         self.latch_lock()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
-            scene8_s_cfg.setFieldColor(MATCH_BLUE)
+            pointC_cfg.setFieldColor(MATCH_BLUE)
         self.move_base_client.send_goal(
-            scene8_s_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
+            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
         rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
@@ -537,7 +537,7 @@ class FulltaskSceneHandler(object):
 
 if __name__ == "__main__":
     rospy.init_node('tr_server')
-    color = rospy.get_param("~color", "blue")
+    color = rospy.get_param("~color", "red")
     if color == "red":
         match_color = MATCH_RED
     elif color == "blue":

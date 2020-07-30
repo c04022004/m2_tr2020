@@ -73,7 +73,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     point_density = 1000
 
     velocity_z_kP = 5.0
-    velocity_z_kI = 0.0
+    velocity_z_kI = 0.01
     velocity_z_ilimit = 1.0
     velocity_z_max = 3.0
     target_z = -pi/2
@@ -146,7 +146,7 @@ class PurePidConfig: # Default setting of MATCH_RED
 
     velocity_z_max = 1.5
     velocity_z_kP = 3.0
-    velocity_z_kI = 0.001
+    velocity_z_kI = 0.0
     velocity_z_kD = 0.1
 
     kP = 0.0
@@ -232,8 +232,8 @@ scene3_s_cfg = PurePidConfig(POINT_3, -pi/2)
 scene4_s_cfg = PurePidConfig(POINT_4, -pi/2)
 scene5_s_cfg = PurePidConfig(POINT_5, -pi/2)
 scene6_s_cfg = PurePidConfig(POINT_S, -pi/2)
-scene7_s_cfg = PurePidConfig(POINT_C, -pi/2)
-scene8_s_cfg = PurePidConfig(POINT_D, -pi/2)
+scene7_cfg = PurePidConfig(POINT_C, -pi/2)
+scene8_cfg = PurePidConfig(POINT_D, -2.10)
 
 scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
 scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
