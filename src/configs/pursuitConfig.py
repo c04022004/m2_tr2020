@@ -7,6 +7,10 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
+ROBOT_N   = 0
+ROBOT_TR1 = 1
+ROBOT_TR2 = 2
+
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
 POINT_D = (1.1, 3.5)
@@ -18,20 +22,6 @@ POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
 POINT_4 = (5.81-tryx_offset, 3.09+3.0*0.03+3*1.3)
 POINT_5 = (5.81-tryx_offset, 3.09+4.0*0.03+4*1.3)
-
-# Point list: (5.57402,7.08162),(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),(0.996634,3.76607)
-# Point list: (5.63634,8.37777),(5.25668,8.31206),(3.53799,6.77407),(2.06884,5.34484),(1.03174,3.80271)
-
-
-# CHK_PTS = [
-#     [ POINT_S, POINT_C ], # scene 1
-#     [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_1 ], # scene 2
-#     [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_2 ], # scene 3
-#     [ POINT_C,(3.1, 3.57),POINT_3 ], # scene 4
-#     [ POINT_C,(2.45023,2.59568),(4.19525,3.97616),POINT_4 ], # scene 5
-#     [ POINT_C,(2.99331,3.31949),(4.56409,3.48977),POINT_5 ], # scene 6
-#     [ POINT_C, POINT_S ], # scene 7
-# ]
 
 CHK_PTS = [
     # scene 0
@@ -136,7 +126,6 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 
         pure_pursuit_data.stop_type = self.stop_type
         pure_pursuit_data.stop_radius = radius
-        pure_pursuit_data.stop_deadzone = 0.05
         pure_pursuit_data.stop_min_speed = stop_min_speed
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)

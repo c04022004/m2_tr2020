@@ -1,0 +1,122 @@
+<launch>
+
+	<arg name="motor0_epos" default="682129003506"/>
+	<arg name="motor1_epos" default="682129001905"/>
+	<arg name="motor2_epos" default="682129003081"/>
+	<arg name="motor3_epos" default="682129003495"/>
+	<arg name="motor_mode" default="2"/> <!-- 2 = V Mode -->
+	<arg name="motor_obtain_data_freq" default="200"/>
+	<arg name="motor_obtain_p_feedback" default="false"/>
+	<arg name="motor_obtain_v_feedback" default="true"/>
+	<arg name="motor_obtain_current_torque" default="true"/>
+	<arg name="motor_wait_for_serial_number_server" default="true"/>
+	<arg name="motor_epos4board_serial_number_server_timeout" value="10000"/>
+
+	<!-- EPOS4 board via USB -->
+	<node name="epos4board_serial_number_server"
+		pkg="epos_board"
+		type="epos4board_serial_number_server"
+		output="screen">
+	</node>
+
+	<!-- Motor Front Right -->
+	<node name="motor_base_0"
+		pkg="epos_board"
+		type="epos4board_node"
+		output="screen">
+
+		<param name="board_id" type="str" value="base_0"/>
+		<param name="mode" value="$(arg motor_mode)"/>
+		<param name="serial_number" type="str" value="$(arg motor0_epos)"/>
+		<param name="obtain_data_freq" value="$(arg motor_obtain_data_freq)"/>
+		<param name="obtain_p_feedback" value="$(arg motor_obtain_p_feedback)"/>
+		<param name="obtain_v_feedback" value="$(arg motor_obtain_v_feedback)" />
+		<param name="obtain_current_torque" value="$(arg motor_obtain_current_torque)" />
+		<param name="wait_for_serial_number_server" value="$(arg motor_wait_for_serial_number_server)" />
+		<param name="epos4board_serial_number_server_timeout" value="$(arg motor_epos4board_serial_number_server_timeout)" />
+	</node>
+
+	<!-- Motor Front Left -->
+	<node name="motor_base_1"
+		pkg="epos_board"
+		type="epos4board_node"
+		output="screen">
+
+		<param name="board_id" type="str" value="base_1"/>
+		<param name="mode" value="$(arg motor_mode)"/>
+		<param name="serial_number" type="str" value="$(arg motor1_epos)"/>
+		<param name="obtain_data_freq" value="$(arg motor_obtain_data_freq)"/>
+		<param name="obtain_p_feedback" value="$(arg motor_obtain_p_feedback)"/>
+		<param name="obtain_v_feedback" value="$(arg motor_obtain_v_feedback)" />
+		<param name="obtain_current_torque" value="$(arg motor_obtain_current_torque)" />
+		<param name="wait_for_serial_number_server" value="$(arg motor_wait_for_serial_number_server)" />
+		<param name="epos4board_serial_number_server_timeout" value="$(arg motor_epos4board_serial_number_server_timeout)" />
+	</node>
+
+	<!-- Motor Back Left -->
+	<node name="motor_base_2"
+		pkg="epos_board"
+		type="epos4board_node"
+		output="screen">
+
+		<param name="board_id" type="str" value="base_2"/>
+		<param name="mode" value="$(arg motor_mode)"/>
+		<param name="serial_number" type="str" value="$(arg motor2_epos)"/>
+		<param name="obtain_data_freq" value="$(arg motor_obtain_data_freq)"/>
+		<param name="obtain_p_feedback" value="$(arg motor_obtain_p_feedback)"/>
+		<param name="obtain_v_feedback" value="$(arg motor_obtain_v_feedback)" />
+		<param name="obtain_current_torque" value="$(arg motor_obtain_current_torque)" />
+		<param name="wait_for_serial_number_server" value="$(arg motor_wait_for_serial_number_server)" />
+		<param name="epos4board_serial_number_server_timeout" value="$(arg motor_epos4board_serial_number_server_timeout)" />
+	</node>
+
+	<!-- Motor Back Right -->
+	<node name="motor_base_3"
+		pkg="epos_board"
+		type="epos4board_node"
+		output="screen">
+
+		<param name="board_id" type="str" value="base_3"/>
+		<param name="mode" value="$(arg motor_mode)"/>
+		<param name="serial_number" type="str" value="$(arg motor3_epos)"/>
+		<param name="obtain_data_freq" value="$(arg motor_obtain_data_freq)"/>
+		<param name="obtain_p_feedback" value="$(arg motor_obtain_p_feedback)"/>
+		<param name="obtain_v_feedback" value="$(arg motor_obtain_v_feedback)" />
+		<param name="obtain_current_torque" value="$(arg motor_obtain_current_torque)" />
+		<param name="wait_for_serial_number_server" value="$(arg motor_wait_for_serial_number_server)" />
+		<param name="epos4board_serial_number_server_timeout" value="$(arg motor_epos4board_serial_number_server_timeout)" />
+	</node>
+
+	<!-- io board -->
+	<node name="servo_io_board"
+		pkg="m2_servo_io_board"
+		type="servo_io_board.py"
+		respawn="true"
+		output="screen">
+
+		<param name="serial_port" type="str" value="/dev/tinyboard-ServoIOBoard_0001" />
+		<param name="board_id"  value="1" />
+	</node>
+
+	<!-- Arduino sheild to used DJI motors -->
+	<node name="dji_controller_node" pkg="m2_dji_can" type="controller_node.py" output="screen" >
+    	<param name="port_name" value="/dev/arduino-8543333323135110B1C1" />
+    	<param name="baudrate" type="int" value="115200" />
+    	<param name="num_motors" type="int" value="2" />
+    </node>
+
+
+	<!-- Convert cmd_vel to motor v_setpoint -->
+	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">
+		<arg name="chassis_config" value="$(find m2_tr2020)/launch/owheel_epos4.yaml" />
+	</include>
+
+	<!-- cmd_vel mux, with priorities -->
+	<node name="cmd_vel_mux"
+		pkg="m2_chassis_utils"
+		type="negotiate_cmd_vel.py"
+		respawn="true"
+		output="screen">
+	</node>
+
+</launch>

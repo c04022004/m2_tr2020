@@ -9,9 +9,6 @@ from math import pi
 from m2_tr2020.msg import *
 import time
 from actionlib_msgs.msg import GoalStatus
-# import shapely.geometry
-# import shapely.geometry.polygon
-
 from configs.pursuitConfig import *
 
 
@@ -19,7 +16,11 @@ from configs.pursuitConfig import *
 # MATCH_RED  = 1
 # MATCH_BLUE = 2
 
-MAX_SPEED = 3.0
+# ROBOT_N   = 0
+# ROBOT_TR1 = 1
+# ROBOT_TR2 = 2
+
+MAX_SPEED = 1.5
 
 class FulltaskSceneHandler(object):
 
@@ -28,7 +29,9 @@ class FulltaskSceneHandler(object):
         self.move_base_client = actionlib.SimpleActionClient('Switch', SwitchModeAction)
         self.move_base_client.wait_for_server()
 
-        self.io_pub = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
+        self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
+        self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
+        self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
         self.delayed_lifter_thread = None
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
@@ -78,6 +81,7 @@ class FulltaskSceneHandler(object):
             rospy.logwarn("shutdown request received")
             if self._as.is_active():
                 self.move_base_client.cancel_all_goals()
+                self.dji_client.cancel_all_goals()
                 self._as.set_preempted()
             event.set()
         return shutdown_func
@@ -96,45 +100,10 @@ class FulltaskSceneHandler(object):
             rospy.logwarn("fulltask goal preempt request")
             if self._as.is_active():
                 self.move_base_client.cancel_all_goals()
+                self.dji_client.cancel_all_goals()
                 self._as.set_preempted()
             event.set()
         return preempt_cb
-
-    def gen_try_intermediate_func(self, event, try_y):
-        # try_polygon_points = [
-        #     (5.65, try_y-0.05),
-        #     (5.65, try_y+0.05),
-        #     # (6.65, 3.09+0.05),
-        #     # (6.65, 3.09-0.05)
-        #     (7.65, try_y+0.05),
-        #     (7.65, try_y-0.05)
-        # ]
-        # shapely_polygon = shapely.geometry.Polygon(try_polygon_points)
-        # def intermediate_func(msg):
-        #     stop_polygon_msg = PolygonStamped()
-        #     stop_polygon_msg.header.frame_id = "map"
-
-        #     for pair in try_polygon_points:
-        #         x = pair[0]
-        #         y = pair[1]
-
-        #         p = Point()
-        #         p.y = y
-        #         p.z = 0.02
-        #         stop_polygon_msg.polygon.points.append(p)
-            
-        #     self.stop_polygon_pub.publish(stop_polygon_msg)
-        #     pose = msg.cur_pos.pose.pose
-        #     # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msg.progress))
-        #     shapely_point = shapely.geometry.Point(pose.position.x, pose.position.y)
-
-        #     if (shapely_polygon.contains(shapely_point)):
-        #         stop_polygon_msg = PolygonStamped()
-        #         stop_polygon_msg.header.frame_id = "map"
-        #         self.stop_polygon_pub.publish(stop_polygon_msg)
-        #         event.set() # python threading event
-                
-        return intermediate_func
 
     def as_check_preempted(self):
         if not self._as.is_active() :
@@ -145,19 +114,29 @@ class FulltaskSceneHandler(object):
         return False
 
     def do_try(self):
-        self.io_pub.publish(1)
-        time.sleep(1.0)
-        self.latch_lock()
-        # if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
-        #     self.delayed_lifter_thread.cancel()
-        # self.delayed_lifter_thread = threading.Timer(0.1, self.latch_lock)
-        # self.delayed_lifter_thread.start()
-    
+        if robot_type == ROBOT_TR1:
+            self.io_pub_latch.publish(1)
+            time.sleep(1.0)
+            self.latch_lock()
+            # if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
+            #     self.delayed_lifter_thread.cancel()
+            # self.delayed_lifter_thread = threading.Timer(0.1, self.latch_lock)
+            # self.delayed_lifter_thread.start()
+        elif robot_type == ROBOT_TR2:
+            self.io_pub_slider.publish(1)
+            goal = TryGoal()
+            goal.goal.scene_id = 1
+            self.dji_client.send_goal(goal)
+            self.dji_client.wait_for_result()
+            states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
+            state = self.dji_client.get_state()
+            rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
+
     def latch_io(self, output=0):
-        self.io_pub.publish(output)
+        self.io_pub_latch.publish(output)
 
     def latch_lock(self):
-        self.latch_io(0) # retract
+        self.io_pub_latch.publish(0) # retract
 
     def scene_0(self):
         rospy.loginfo("Fulltask scene 0 start!")
@@ -545,5 +524,13 @@ if __name__ == "__main__":
     else:
         match_color = MATCH_RED
         rospy.logwarn("No valid color specified, defaulting to RED")
+
+    team = rospy.get_param("~team", "rx")
+    if team == "rx":
+        robot_type = ROBOT_TR1
+    elif team == "blue":
+        robot_type = ROBOT_TR2
+    else:
+        rospy.logerr("No valid team specified, quitting")
     fulltask_server = FulltaskSceneHandler()
     rospy.spin()
