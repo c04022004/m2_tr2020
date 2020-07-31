@@ -16,6 +16,10 @@ max_rotational_speed = 1.2
 old_data = Ps4Data()
 robot_sel = None
 
+ROBOT_N   = 0
+ROBOT_TR1 = 1
+ROBOT_TR2 = 2
+
 def ps4_cb(ps4_data): # update ps4 data
     
     global direct,old_data
@@ -32,13 +36,13 @@ def ps4_cb(ps4_data): # update ps4 data
         tr_cancel_pub.publish(GoalID())
         sw_cancel_pub.publish(GoalID())
         dji_cancel_pub.publish(GoalID())
-        if robot_sel == 1:
+        if robot_sel == ROBOT_TR1:
             # try latch release/retract (io_7)
             if ps4_data.triangle and not old_data.triangle: # release/try
                 io_pub_latch.publish(1)
             if ps4_data.cross and not old_data.cross: # retract
                 io_pub_latch.publish(0)
-        elif robot_sel == 2:
+        elif robot_sel == ROBOT_TR2:
             # try slider release/retract (io_0)
             if ps4_data.triangle and not old_data.triangle: # pushing up
                 io_pub_slider.publish(1)
@@ -117,11 +121,11 @@ fulltask_pub = rospy.Publisher('/tr_server/goal', FulltaskActionGoal, queue_size
 
 team = rospy.get_param("~team")
 if team == "rx":
-    robot_sel = 1
+    robot_sel = ROBOT_TR1
 elif team == "rtx":
-    robot_sel = 2
+    robot_sel = ROBOT_TR2
 else:
-    rospy.logerr("Please specify a robot")
+    rospy.logerr("No valid team specified, quitting")
     exit(1)
 
 rospy.spin()

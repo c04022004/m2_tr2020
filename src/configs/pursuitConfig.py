@@ -127,6 +127,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         pure_pursuit_data.stop_type = self.stop_type
         pure_pursuit_data.stop_radius = radius
         pure_pursuit_data.stop_min_speed = stop_min_speed
+        pure_pursuit_data.stop_deadzone = 0.05
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
         return goal

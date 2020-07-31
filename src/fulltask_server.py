@@ -20,7 +20,7 @@ from configs.pursuitConfig import *
 # ROBOT_TR1 = 1
 # ROBOT_TR2 = 2
 
-MAX_SPEED = 1.5
+MAX_SPEED = 2.5
 
 class FulltaskSceneHandler(object):
 
@@ -117,15 +117,15 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             time.sleep(1.0)
-            self.latch_lock()
+            self.ball_guard()
             # if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
             #     self.delayed_lifter_thread.cancel()
-            # self.delayed_lifter_thread = threading.Timer(0.1, self.latch_lock)
+            # self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
             # self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
-            goal = TryGoal()
-            goal.goal.scene_id = 1
+            goal = TryGoal(scene_id=1)
+            # goal.goal.scene_id = 1
             self.dji_client.send_goal(goal)
             self.dji_client.wait_for_result()
             states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
@@ -135,14 +135,20 @@ class FulltaskSceneHandler(object):
     def latch_io(self, output=0):
         self.io_pub_latch.publish(output)
 
-    def latch_lock(self):
-        self.io_pub_latch.publish(0) # retract
+    def slider_io(self, output=0):
+        self.io_pub_slider.publish(output)
+
+    def ball_guard(self):
+        if robot_type == ROBOT_TR1:
+            self.latch_io(0) # retract
+        elif robot_type == ROBOT_TR2:
+            self.slider_io(0) # down
 
     def scene_0(self):
         rospy.loginfo("Fulltask scene 0 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene0_f_cfg.setFieldColor(MATCH_BLUE)
@@ -153,10 +159,9 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
         if self.as_check_preempted(): return
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene0_s_cfg.positionFlipX()
@@ -176,7 +181,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene 1 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene1_f_cfg.setFieldColor(MATCH_BLUE)
@@ -189,7 +194,7 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene1_s_cfg.positionFlipX()
@@ -214,7 +219,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
+        self.ball_guard()
         if self.as_check_preempted(): return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -224,7 +229,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene 2 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         try_trig = try_cfg.getTriggers(MATCH_RED)
         if(match_color == MATCH_BLUE):
@@ -240,7 +245,7 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene2_s_cfg.positionFlipX()
@@ -265,7 +270,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
+        self.ball_guard()
         if self.as_check_preempted(): return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -276,7 +281,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene 3 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         try_trig = try_cfg.getTriggers(MATCH_RED)
         if(match_color == MATCH_BLUE):
@@ -292,7 +297,7 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene3_s_cfg.setFieldColor(MATCH_BLUE)
@@ -318,7 +323,7 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
+        self.ball_guard()
         if self.as_check_preempted(): return
     
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -328,7 +333,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene 4 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         try_trig = try_cfg.getTriggers(MATCH_RED)
         if(match_color == MATCH_BLUE):
@@ -344,6 +349,7 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
         
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene4_s_cfg.setFieldColor(MATCH_BLUE)
@@ -363,13 +369,28 @@ class FulltaskSceneHandler(object):
             scene4_b_cfg.setFieldColor(MATCH_BLUE)
         self.move_base_client.send_goal(
             scene4_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func_pose(self.path_finish_event,*try_trig),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event),
             done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
         rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
+        self.ball_guard()
+        if self.as_check_preempted(): return
+
+        # PID stoping at POINT_D
+        self.ball_guard()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            pointD_cfg.setFieldColor(MATCH_BLUE)
+        self.move_base_client.send_goal(
+            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
+        rospy.loginfo("moving to POINT_D")
+        self.path_finish_event.wait()
+        self.ball_guard()
         if self.as_check_preempted(): return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -379,7 +400,7 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene 5 start!")
         start_time = time.time()
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         try_trig = try_cfg.getTriggers(MATCH_RED)
         if(match_color == MATCH_BLUE):
@@ -395,7 +416,7 @@ class FulltaskSceneHandler(object):
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
 
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             scene5_s_cfg.setFieldColor(MATCH_BLUE)
@@ -407,7 +428,6 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("breaking stage before Try Spot 3")
         self.path_finish_event.wait()
         if self.as_check_preempted(): return
-
         
         self.do_try()
 
@@ -421,7 +441,22 @@ class FulltaskSceneHandler(object):
         self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
         rospy.loginfo("goal to receiving pos")
         self.path_finish_event.wait()
-        self.latch_lock()
+        self.ball_guard()
+        if self.as_check_preempted(): return
+
+        # PID stoping at POINT_D
+        self.ball_guard()
+        self.path_finish_event = threading.Event()
+        if(match_color == MATCH_BLUE):
+            pointD_cfg.setFieldColor(MATCH_BLUE)
+        self.move_base_client.send_goal(
+            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
+            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
+        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
+        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
+        rospy.loginfo("moving to POINT_D")
+        self.path_finish_event.wait()
+        self.ball_guard()
         if self.as_check_preempted(): return
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
@@ -435,7 +470,7 @@ class FulltaskSceneHandler(object):
         if(match_color == MATCH_BLUE):
             scene0_b_cfg.setFieldColor(MATCH_BLUE)
 
-        self.latch_lock()
+        self.ball_guard()
         self.move_base_client.send_goal(
             scene0_b_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=1.5, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
             feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
@@ -451,7 +486,7 @@ class FulltaskSceneHandler(object):
     def scene_7(self):
         rospy.loginfo("Fulltask scene 7 start!")
         start_time = time.time()
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             pointC_cfg.setFieldColor(MATCH_BLUE)
@@ -470,7 +505,7 @@ class FulltaskSceneHandler(object):
     def scene_8(self):
         rospy.loginfo("Fulltask scene 8 start!")
         start_time = time.time()
-        self.latch_lock()
+        self.ball_guard()
         self.path_finish_event = threading.Event()
         if(match_color == MATCH_BLUE):
             pointD_cfg.setFieldColor(MATCH_BLUE)
@@ -528,9 +563,10 @@ if __name__ == "__main__":
     team = rospy.get_param("~team", "rx")
     if team == "rx":
         robot_type = ROBOT_TR1
-    elif team == "blue":
+    elif team == "rtx":
         robot_type = ROBOT_TR2
     else:
         rospy.logerr("No valid team specified, quitting")
+        exit(1)
     fulltask_server = FulltaskSceneHandler()
     rospy.spin()
