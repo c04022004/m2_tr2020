@@ -62,11 +62,11 @@ def execute_cb(goal):
     result = set_current_limit_srv(0, 14745) # ~18A
     result = activate_p_mode_srv(0)
 
-    if (goal.scene_id == 1):
+    if (goal.scene_id == 1): ## Full procedure for auto (=2+3+4)
         # Raise a little bit to push the ball aside
         dji_m0_p_setpoint_pub.publish(-8000)
         result = set_enable_state_srv(0, True)
-        exec_event.wait(2.0)
+        exec_event.wait(1.0)
         if as_check_preempted(): return
 
         # The actual try motion
@@ -90,23 +90,32 @@ def execute_cb(goal):
         exec_event.wait(0.7) # Wait for PID to pull back (softer landing?)
         result = set_enable_state_srv(0, False)
         if as_check_preempted(): return
-
-    if (goal.scene_id == 2):
-        # Then retract back to the starting position
-        dji_m0_p_setpoint_pub.publish(-18000)
+    elif (goal.scene_id == 2):
+        # Raise a little bit to push the ball aside
+        dji_m0_p_setpoint_pub.publish(-8000)
         result = set_enable_state_srv(0, True)
-        while motor0_pos<-18000-1000 and as_check_preempted():
-            if as_check_preempted(): return
-        exec_event.wait(0.2) # Wait for PID to pull back (softer landing?)
-        result = set_enable_state_srv(0, False)
+        exec_event.wait(0.5)
         if as_check_preempted(): return
-    if (goal.scene_id == 3):
-        # Then retract back to the starting position
-        dji_m0_p_setpoint_pub.publish(-45000)
+    elif (goal.scene_id == 3):
+        # The actual try motion
+        dji_m0_p_setpoint_pub.publish(-55000)
         result = set_enable_state_srv(0, True)
-        while motor0_pos<-45000-1000 and as_check_preempted():
+        while motor0_pos>-55000+1000 and not as_check_preempted():
             if as_check_preempted(): return
-        exec_event.wait(0.2) # Wait for PID to pull back (softer landing?)
+        exec_event.wait(0.25) # Wait for PID to pull back (softer landing?)
+        if as_check_preempted(): return
+
+        # Let the metal structure fall
+        result = set_enable_state_srv(0, False)
+        exec_event.wait(0.25)
+        if as_check_preempted(): return
+    elif (goal.scene_id == 4):
+        # Then retract back to the starting position
+        dji_m0_p_setpoint_pub.publish(-15000)
+        result = set_enable_state_srv(0, True)
+        while motor0_pos<-15000-1000 and as_check_preempted():
+            if as_check_preempted(): return
+        exec_event.wait(0.7) # Wait for PID to pull back (softer landing?)
         result = set_enable_state_srv(0, False)
         if as_check_preempted(): return
     else:
@@ -137,7 +146,7 @@ set_enable_state_srv = rospy.ServiceProxy('/dji/set_enable_state', DJISetBool)
 
 _action_name = "dji_try_server"
 _as = actionlib.SimpleActionServer(_action_name, TryAction, execute_cb=execute_cb, auto_start=False)
-time.sleep(0.5)
+time.sleep(0.1)
 _as.start()
 rospy.loginfo("dji_try_server started with all services ready!")
 exec_event = None

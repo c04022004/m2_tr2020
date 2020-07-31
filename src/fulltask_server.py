@@ -45,8 +45,11 @@ class FulltaskSceneHandler(object):
 
         if (match_color == MATCH_BLUE):
             print("tr_server started with BLUE")
-        if (match_color == MATCH_RED):
+        elif (match_color == MATCH_RED):
             print("tr_server started with RED")
+        else:
+            rospy.logerr("No field color selected, aborting!")
+            exit(1)
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
@@ -117,16 +120,14 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             time.sleep(1.0)
-            self.ball_guard()
+            self.io_pub_latch.publish(0) # Take advantage of the mechanical delay
             # if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
             #     self.delayed_lifter_thread.cancel()
             # self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
             # self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
-            goal = TryGoal(scene_id=1)
-            # goal.goal.scene_id = 1
-            self.dji_client.send_goal(goal)
+            self.dji_client.send_goal(TryGoal(scene_id=1))
             self.dji_client.wait_for_result()
             states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
             state = self.dji_client.get_state()

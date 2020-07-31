@@ -21,12 +21,6 @@
         <param name="reset_z" value="$(arg init_z)" />
     </node>  
 
-    <!-- <node name = "mode_swticher"
-        pkg = "m2_move_base"
-        type = "mode_switcher.py"
-        output = "screen"
-        respawn = "true" /> -->
-
     <node name = "rqt_viz"
         pkg = "m2_chassis_utils"
         type = "odom2plot.py"
