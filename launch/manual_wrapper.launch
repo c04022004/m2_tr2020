@@ -10,6 +10,8 @@
         pkg = "m2_tr2020"
         type = "ps4_handler.py"
         output = "screen"
-        respawn = "true" />
+        respawn = "true">
+        <param name="team" type="str" value="rtx" />
+    </node>
 
 </launch>

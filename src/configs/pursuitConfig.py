@@ -7,31 +7,21 @@ MATCH_NONE = 0
 MATCH_RED  = 1
 MATCH_BLUE = 2
 
+ROBOT_N   = 0
+ROBOT_TR1 = 1
+ROBOT_TR2 = 2
+
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
 POINT_D = (1.1, 3.5)
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
-tryx_offset = 0.10 # reserve for overshoot
+tryx_offset = 0.05 # reserve for overshoot
 POINT_1 = (5.81-tryx_offset, 3.09+0.5*0.03+0*1.3)
 POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
 POINT_4 = (5.81-tryx_offset, 3.09+3.0*0.03+3*1.3)
 POINT_5 = (5.81-tryx_offset, 3.09+4.0*0.03+4*1.3)
-
-# Point list: (5.57402,7.08162),(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),(0.996634,3.76607)
-# Point list: (5.63634,8.37777),(5.25668,8.31206),(3.53799,6.77407),(2.06884,5.34484),(1.03174,3.80271)
-
-
-# CHK_PTS = [
-#     [ POINT_S, POINT_C ], # scene 1
-#     [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_1 ], # scene 2
-#     [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_2 ], # scene 3
-#     [ POINT_C,(3.1, 3.57),POINT_3 ], # scene 4
-#     [ POINT_C,(2.45023,2.59568),(4.19525,3.97616),POINT_4 ], # scene 5
-#     [ POINT_C,(2.99331,3.31949),(4.56409,3.48977),POINT_5 ], # scene 6
-#     [ POINT_C, POINT_S ], # scene 7
-# ]
 
 CHK_PTS = [
     # scene 0
@@ -61,8 +51,9 @@ CHK_PTS = [
     },
     # scene 5
     {
-        'f_path': [ POINT_C,(3.50453,4.11369),(4.55161,5.41157),(5.19676,7.57945),POINT_5 ], 
-        'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
+        'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], 
+        'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ]
+        # 'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
     }
 ]
 
@@ -73,7 +64,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     point_density = 1000
 
     velocity_z_kP = 5.0
-    velocity_z_kI = 0.0
+    velocity_z_kI = 0.01
     velocity_z_ilimit = 1.0
     velocity_z_max = 3.0
     target_z = -pi/2
@@ -135,8 +126,8 @@ class PurePursuitConfig: # Default setting of MATCH_RED
 
         pure_pursuit_data.stop_type = self.stop_type
         pure_pursuit_data.stop_radius = radius
-        pure_pursuit_data.stop_deadzone = 0.05
         pure_pursuit_data.stop_min_speed = stop_min_speed
+        pure_pursuit_data.stop_deadzone = 0.05
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PURSUIT, pure_pursuit_data=pure_pursuit_data)
         return goal
@@ -146,7 +137,7 @@ class PurePidConfig: # Default setting of MATCH_RED
 
     velocity_z_max = 1.5
     velocity_z_kP = 3.0
-    velocity_z_kI = 0.001
+    velocity_z_kI = 0.0
     velocity_z_kD = 0.1
 
     kP = 0.0
@@ -232,8 +223,8 @@ scene3_s_cfg = PurePidConfig(POINT_3, -pi/2)
 scene4_s_cfg = PurePidConfig(POINT_4, -pi/2)
 scene5_s_cfg = PurePidConfig(POINT_5, -pi/2)
 scene6_s_cfg = PurePidConfig(POINT_S, -pi/2)
-scene7_s_cfg = PurePidConfig(POINT_C, -pi/2)
-scene8_s_cfg = PurePidConfig(POINT_D, -pi/2)
+pointC_cfg = PurePidConfig(POINT_C, -pi/2)
+pointD_cfg = PurePidConfig(POINT_D, -2.10)
 
 scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
 scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])

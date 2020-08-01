@@ -95,9 +95,16 @@
 		output="screen">
 
 		<param name="serial_port" type="str" value="/dev/tinyboard-ServoIOBoard_0001" />
-				<param name="board_id"  value="1" />
+		<param name="board_id"  value="1" />
 	</node>
 
+	<!-- Arduino sheild to used DJI motors -->
+	<node name="dji_controller_node" pkg="m2_dji_can" type="controller_node.py" output="screen" >
+    	<param name="port_name" value="/dev/arduino-8543333323135110B1C1" />
+    	<param name="baudrate" type="int" value="115200" />
+    	<param name="num_motors" type="int" value="2" />
+    </node>
+	
 	<!-- Convert cmd_vel to motor v_setpoint -->
 	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">
 		<arg name="chassis_config" value="$(find m2_tr2020)/launch/owheel_epos4.yaml" />

@@ -1,0 +1,15 @@
+# Define the goal
+
+uint8 scene_id
+
+---
+
+# Define the result
+
+bool success
+
+---
+
+# Define a feedback message 
+
+int32 progress

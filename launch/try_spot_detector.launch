@@ -1,7 +1,16 @@
 <launch>
 
-<!-- <include file="$(find rplidar_ros)/launch/rplidar.launch">
-</include> -->
+<arg name="rplidar_dev" default="/dev/ttyUSB0"/>
+
+<!-- <include file="$(find rplidar_ros)/launch/rplidar.launch"/> -->
+<node name="rplidarNode" pkg="rplidar_ros"
+    type="rplidarNode" respawn="true" output="screen">
+    <param name="serial_port" type="string" value="$(arg rplidar_dev)"/>
+    <param name="serial_baudrate" type="int" value="115200"/>
+    <param name="frame_id" type="string" value="laser"/>
+    <param name="inverted" type="bool" value="true"/>
+    <param name="angle_compensate" type="bool" value="true"/>
+</node>
 
 <include file="$(find laser_line_extraction)/launch/example.launch">
     <arg name="max_line_gap" default="0.09" />
@@ -11,5 +20,12 @@
     <arg name="min_split_dist" default="0.035" />
     <arg name="outlier_dist" default="0.1" />
 </include>
+
+<node name="spotfinder" pkg="m2_tr2020"
+    type="locate_try_spot.py" respawn="true" output="screen">
+    <!-- <param name="lidar_offset_x" type="double" value="0.00"/>
+    <param name="lidar_offset_y" type="double" value="0.00"/>
+    <param name="lidar_offset_z" type="double" value="0.00"/> -->
+</node>
 
 </launch>

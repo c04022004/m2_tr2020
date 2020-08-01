@@ -1,0 +1,23 @@
+<launch>
+    <node name = "mode_swticher"
+        pkg = "m2_move_base"
+        type = "mode_switcher.py"
+        output = "screen"
+        respawn = "true" />
+
+    <node name = "fulltask_server" 
+        pkg = "m2_tr2020"
+        type = "fulltask_server.py"
+        output = "screen"
+        respawn = "true">
+        <param name="team" type="str" value="rtx" />
+    </node>
+
+    <node name = "dji_try_server" 
+        pkg = "m2_tr2020"
+        type = "dji_try_action.py"
+        output = "screen"
+        respawn = "true">
+    </node>
+
+</launch>

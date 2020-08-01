@@ -1,9 +1,9 @@
 <launch>
 
-	<arg name="motor0_epos" default="682129003496"/>
-	<arg name="motor1_epos" default="682129003067"/>
-	<arg name="motor2_epos" default="682129001902"/>
-	<arg name="motor3_epos" default="682129003393"/>
+	<arg name="motor0_epos" default="682129001902"/>
+	<arg name="motor1_epos" default="682129003537"/>
+	<arg name="motor2_epos" default="682129003067"/>
+	<arg name="motor3_epos" default="682129003496"/>
 	<arg name="motor_mode" default="2"/> <!-- 2 = V Mode -->
 	<arg name="motor_obtain_data_freq" default="200"/>
 	<arg name="motor_obtain_p_feedback" default="false"/>
@@ -95,7 +95,7 @@
 		output="screen">
 
 		<param name="serial_port" type="str" value="/dev/tinyboard-ServoIOBoard_0001" />
-				<param name="board_id"  value="1" />
+		<param name="board_id"  value="1" />
 	</node>
 
 	<!-- Convert cmd_vel to motor v_setpoint -->
