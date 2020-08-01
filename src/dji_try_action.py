@@ -55,21 +55,20 @@ def execute_cb(goal):
     _as.register_preempt_callback(gen_preempt_cb(exec_event))
 
     # Make sure the slider is unblocked
-    io_pub_slider.publish(1)
+    # io_pub_slider.publish(1)
     
     # Init dji motor stuffs
     # result = set_offset_srv(0, motor0_pos) # Set offset as current encoder reading
     result = set_current_limit_srv(0, 14745) # ~18A
     result = activate_p_mode_srv(0)
 
-    if (goal.scene_id == 1): ## Full procedure for auto (=2+3+4)
-        # Raise a little bit to push the ball aside
-        dji_m0_p_setpoint_pub.publish(-8000)
-        result = set_enable_state_srv(0, True)
-        exec_event.wait(1.0)
+    if (goal.scene_id == 0):
+        result = set_enable_state_srv(0, False)
         if as_check_preempted(): return
-
-        # The actual try motion
+    elif (goal.scene_id == 1): ## Full procedure for auto (=3+4)
+        # Make sure the slider is unblocked
+        io_pub_slider.publish(1)
+         # The actual try motion
         dji_m0_p_setpoint_pub.publish(-55000)
         result = set_enable_state_srv(0, True)
         while motor0_pos>-55000+1000 and not as_check_preempted():
@@ -83,20 +82,22 @@ def execute_cb(goal):
         if as_check_preempted(): return
 
         # Then retract back to the starting position
-        dji_m0_p_setpoint_pub.publish(-15000)
+        dji_m0_p_setpoint_pub.publish(-12000)
         result = set_enable_state_srv(0, True)
-        while motor0_pos<-15000-1000 and as_check_preempted():
+        while motor0_pos<-12000-1000 and as_check_preempted():
             if as_check_preempted(): return
         exec_event.wait(0.7) # Wait for PID to pull back (softer landing?)
-        result = set_enable_state_srv(0, False)
+        # result = set_enable_state_srv(0, False)
         if as_check_preempted(): return
     elif (goal.scene_id == 2):
         # Raise a little bit to push the ball aside
-        dji_m0_p_setpoint_pub.publish(-8000)
+        dji_m0_p_setpoint_pub.publish(-6500)
         result = set_enable_state_srv(0, True)
         exec_event.wait(0.5)
         if as_check_preempted(): return
     elif (goal.scene_id == 3):
+        # Make sure the slider is unblocked
+        io_pub_slider.publish(1)
         # The actual try motion
         dji_m0_p_setpoint_pub.publish(-55000)
         result = set_enable_state_srv(0, True)
@@ -104,12 +105,13 @@ def execute_cb(goal):
             if as_check_preempted(): return
         exec_event.wait(0.25) # Wait for PID to pull back (softer landing?)
         if as_check_preempted(): return
-
         # Let the metal structure fall
         result = set_enable_state_srv(0, False)
         exec_event.wait(0.25)
         if as_check_preempted(): return
     elif (goal.scene_id == 4):
+        # Make sure the slider is unblocked
+        io_pub_slider.publish(1)
         # Then retract back to the starting position
         dji_m0_p_setpoint_pub.publish(-15000)
         result = set_enable_state_srv(0, True)
@@ -122,7 +124,7 @@ def execute_cb(goal):
         rospy.logwarn("No matching goal number (%d)"%goal.scene_id)
         return
 
-    rospy.loginfo("try done. time=%f"%(time.time()-start_time))
+    rospy.loginfo("dji action done. time=%f"%(time.time()-start_time))
     _as.set_succeeded(TryResult())
 
 # ========== Main ==========

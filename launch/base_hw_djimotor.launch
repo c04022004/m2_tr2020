@@ -105,6 +105,7 @@
     	<param name="num_motors" type="int" value="2" />
     </node>
 
+	<node name="dji_try_try_server" pkg="m2_tr2020" type="dji_try_action.py" output="screen" />
 
 	<!-- Convert cmd_vel to motor v_setpoint -->
 	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">

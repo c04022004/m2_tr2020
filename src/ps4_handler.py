@@ -13,7 +13,7 @@ import chassis_control
 
 direct = ChannelTwist()
 direct.channel = ChannelTwist.CONTROLLER
-max_linear_speed = 3.0
+max_linear_speed = 1.5
 max_rotational_speed = 1.2
 
 old_data = Ps4Data()
@@ -46,10 +46,10 @@ SEMI_AUTO = 4
 
 def unblock_try():
     global slider_pos
-    if robot_sel == ROBOT_TR2:
+    if robot_type == ROBOT_TR2:
         io_pub_slider.publish(1)
         if slider_pos != True:
-            time.sleep(0.5)
+            time.sleep(1.0)
             slider_pos = True
 
 def update_led():
@@ -76,10 +76,12 @@ def ps4_cb(ps4_data): # update ps4 data
             try_call_motors(True)
     elif ps4_data.l1 and not old_data.l1:
         control_mode = MANUAL
+        orientation_helper.stop_z()
         update_led()
         tr_cancel_pub.publish(GoalID())
         sw_cancel_pub.publish(GoalID())
         dji_cancel_pub.publish(GoalID())
+        io_pub_slider.publish(1)
     elif ps4_data.r1 and not old_data.r1:
         control_mode = SEMI_AUTO
         update_led()
@@ -92,9 +94,11 @@ def ps4_cb(ps4_data): # update ps4 data
         twist.linear.y  = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly)
         twist.angular.z = ps4_data.hat_rx*max_rotational_speed
         vel_magnitude = np.hypot(twist.linear.x, twist.linear.y)
-        if np.hypot(twist.linear.x, twist.linear.y) > max_linear_speed:
-                twist.linear.x = twist.linear.x/vel_magnitude*max_linear_speed
-                twist.linear.y = twist.linear.y/vel_magnitude*max_linear_speed
+        if np.isclose(twist.angular.z,0.0):
+            orientation_helper.stop_z()
+        if vel_magnitude > max_linear_speed:
+            twist.linear.x = twist.linear.x/vel_magnitude*max_linear_speed
+            twist.linear.y = twist.linear.y/vel_magnitude*max_linear_speed
         fix_theta_vel = orientation_helper.compensate(twist)
         local_vel = kmt_helper.kmt_local2world(fix_theta_vel)
 
@@ -106,13 +110,13 @@ def ps4_cb(ps4_data): # update ps4 data
         vel_pub.publish(direct)
 
         # Change ds4 button layout according to robot
-        if robot_sel == ROBOT_TR1:
+        if robot_type == ROBOT_TR1:
             # try latch release/retract (io_7)
             if ps4_data.triangle and not old_data.triangle: # release/try
                 io_pub_latch.publish(1)
             if ps4_data.cross and not old_data.cross: # retract
                 io_pub_latch.publish(0)
-        elif robot_sel == ROBOT_TR2:
+        elif robot_type == ROBOT_TR2:
             # try slider release/retract (io_0)
             if ps4_data.triangle and not old_data.triangle: # pushing up
                 io_pub_slider.publish(1)
@@ -128,6 +132,7 @@ def ps4_cb(ps4_data): # update ps4 data
                 goal = TryActionGoal()
                 goal.goal.scene_id = 4
                 dji_try_pub.publish(goal)
+
     elif control_mode == SEMI_AUTO:
         if ps4_data.share and not old_data.share: # scene0/go wait 1st ball
             goal = FulltaskActionGoal()
