@@ -2,14 +2,7 @@
 from math import pi
 from geometry_msgs.msg import *
 from m2_move_base.msg import *
-
-MATCH_NONE = 0
-MATCH_RED  = 1
-MATCH_BLUE = 2
-
-ROBOT_N   = 0
-ROBOT_TR1 = 1
-ROBOT_TR2 = 2
+from .fieldConfig import *
 
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
@@ -26,35 +19,60 @@ POINT_5 = (5.81-tryx_offset, 3.09+4.0*0.03+4*1.3)
 CHK_PTS = [
     # scene 0
     {
+        'curve': "cubic",
         'f_path': [ POINT_S, POINT_C ],
-        'b_path': [ POINT_C, POINT_S ]
+        'f_stop': POINT_C,
+        'b_path': None,
+        'b_stop': None,
     },
     # scene 1
     {
+        'curve': "cubic",
         'f_path': [ POINT_C,(2.28189,2.8974),(3.85596,3.98624),POINT_1 ], 
-        'b_path': [ POINT_1,(3.85596,3.98624),(2.28189,2.8974),POINT_C ]
+        'f_stop': POINT_1,
+        'b_path': [ POINT_1,(3.85596,3.98624),(2.28189,2.8974),POINT_C ],
+        'b_stop': POINT_C,
     },
     # scene 2
     {
+        'curve': "cubic",
         'f_path': [ POINT_C,(2.32721,2.85522),(4.03223,4.21992),POINT_2 ], 
-        'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ]
+        'f_stop': POINT_2,
+        'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ],
+        'b_stop': POINT_C,
     },
     # scene 3
     {
+        'curve': "cubic",
         'f_path': [ POINT_C,(3.1, 3.57), POINT_3 ], 
-        'b_path': [ POINT_3,(3.1, 3.57), POINT_C ]
+        'f_stop': POINT_3,
+        'b_path': [ POINT_3,(3.1, 3.57), POINT_C ],
+        'b_stop': POINT_C,
     },
     # scene 4
     {
+        'curve': "cubic",
         'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], 
-        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),POINT_D ]
+        'f_stop': POINT_4,
+        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),POINT_D ],
+        'b_stop': POINT_C,
     },
     # scene 5
     {
+        'curve': "cubic",
         'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], 
-        'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ]
-        # 'b_path': [ POINT_5,(5.37012,8.38554),(4.0548,7.06129),(2.07452,5.55428),POINT_D ]
-    }
+        'f_stop': POINT_5,
+        'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ],
+        'b_stop': POINT_C,
+    },
+    # scene 6
+    {
+        'curve': "cubic",
+        'f_path': [ POINT_C, POINT_S ],
+        'f_stop': POINT_S,
+        'b_path': None,
+        'b_stop': None,
+    },
 ]
 
 class PurePursuitConfig: # Default setting of MATCH_RED
@@ -89,6 +107,10 @@ class PurePursuitConfig: # Default setting of MATCH_RED
             self.spline_type = PurePursuitData.BEZIER
         self.raw_pts = raw_pts
         self.chk_pts = [Point(x=point[0], y=point[1]) for point in self.raw_pts]
+        # self.field_color = field_color
+        # if self.field_color != field_color:
+        #     self.knotsFlipX()
+        #     self.field_color = color
 
     def setFieldColor(self, color):
         if color not in [MATCH_RED, MATCH_BLUE]:
@@ -198,37 +220,60 @@ class TryspotBreakTrigger:
     y_min = 0.00
     y_max = 10.0
     thres = 0.90
+    color = None
+
+    def setFieldColor(self, color):
+        if color not in [MATCH_RED, MATCH_BLUE]:
+            return
+        if self.field_color != color:
+            self.positionFlipX()
+            self.field_color = color
 
     def getTriggers(self, color):
-        if color == MATCH_RED:
+        if self.color == MATCH_RED:
             return (self.x_min, self.x_max, self.y_min, self.y_max, self.thres)
-        elif color == MATCH_BLUE:
+        elif self.color == MATCH_BLUE:
             return (13.3-self.x_min, 13.3-self.x_max, self.y_min, self.y_max, self.thres)
-        else: 
-            return None
+        return None
 
-scene0_f_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['f_path'])
-scene1_f_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['f_path'])
-scene2_f_cfg = PurePursuitConfig("cubic", CHK_PTS[2]['f_path'])
-scene3_f_cfg = PurePursuitConfig("cubic", CHK_PTS[3]['f_path'])
-scene4_f_cfg = PurePursuitConfig("cubic", CHK_PTS[4]['f_path'])
-scene5_f_cfg = PurePursuitConfig("cubic", CHK_PTS[5]['f_path'])
+cfg = {}
 
-try_cfg = TryspotBreakTrigger()
-# wait_cfg = 
-scene0_s_cfg = PurePidConfig(POINT_C, -pi/2)
-scene1_s_cfg = PurePidConfig(POINT_1, -pi/2)
-scene2_s_cfg = PurePidConfig(POINT_2, -pi/2)
-scene3_s_cfg = PurePidConfig(POINT_3, -pi/2)
-scene4_s_cfg = PurePidConfig(POINT_4, -pi/2)
-scene5_s_cfg = PurePidConfig(POINT_5, -pi/2)
-scene6_s_cfg = PurePidConfig(POINT_S, -pi/2)
-pointC_cfg = PurePidConfig(POINT_C, -pi/2)
-pointD_cfg = PurePidConfig(POINT_D, -2.10)
+cfg['scene0_f'] = PurePursuitConfig(CHK_PTS[0]['curve'], CHK_PTS[0]['f_path'])
+cfg['scene2_f'] = PurePursuitConfig(CHK_PTS[1]['curve'], CHK_PTS[2]['f_path'])
+cfg['scene1_f'] = PurePursuitConfig(CHK_PTS[2]['curve'], CHK_PTS[1]['f_path'])
+cfg['scene3_f'] = PurePursuitConfig(CHK_PTS[3]['curve'], CHK_PTS[3]['f_path'])
+cfg['scene4_f'] = PurePursuitConfig(CHK_PTS[4]['curve'], CHK_PTS[4]['f_path'])
+cfg['scene5_f'] = PurePursuitConfig(CHK_PTS[5]['curve'], CHK_PTS[5]['f_path'])
+cfg['scene6_f'] = PurePursuitConfig(CHK_PTS[6]['curve'], CHK_PTS[6]['f_path'])
 
-scene0_b_cfg = PurePursuitConfig("cubic", CHK_PTS[0]['b_path'])
-scene1_b_cfg = PurePursuitConfig("cubic", CHK_PTS[1]['b_path'])
-scene2_b_cfg = PurePursuitConfig("cubic", CHK_PTS[2]['b_path'])
-scene3_b_cfg = PurePursuitConfig("cubic", CHK_PTS[3]['b_path'])
-scene4_b_cfg = PurePursuitConfig("cubic", CHK_PTS[4]['b_path'])
-scene5_b_cfg = PurePursuitConfig("cubic", CHK_PTS[5]['b_path'])
+cfg['scene0_fs'] = PurePidConfig(CHK_PTS[0]['f_stop'], -pi/2)
+cfg['scene1_fs'] = PurePidConfig(CHK_PTS[1]['f_stop'], -pi/2)
+cfg['scene2_fs'] = PurePidConfig(CHK_PTS[2]['f_stop'], -pi/2)
+cfg['scene3_fs'] = PurePidConfig(CHK_PTS[3]['f_stop'], -pi/2)
+cfg['scene4_fs'] = PurePidConfig(CHK_PTS[4]['f_stop'], -pi/2)
+cfg['scene5_fs'] = PurePidConfig(CHK_PTS[5]['f_stop'], -pi/2)
+cfg['scene6_fs'] = PurePidConfig(CHK_PTS[6]['f_stop'], -pi/2)
+
+# cfg['scene0_b'] = PurePursuitConfig(CHK_PTS[0]['curve'], CHK_PTS[0]['b_path'])
+cfg['scene2_b'] = PurePursuitConfig(CHK_PTS[1]['curve'], CHK_PTS[2]['b_path'])
+cfg['scene1_b'] = PurePursuitConfig(CHK_PTS[2]['curve'], CHK_PTS[1]['b_path'])
+cfg['scene3_b'] = PurePursuitConfig(CHK_PTS[3]['curve'], CHK_PTS[3]['b_path'])
+cfg['scene4_b'] = PurePursuitConfig(CHK_PTS[4]['curve'], CHK_PTS[4]['b_path'])
+cfg['scene5_b'] = PurePursuitConfig(CHK_PTS[5]['curve'], CHK_PTS[5]['b_path'])
+# cfg['scene5_b'] = PurePursuitConfig(CHK_PTS[6]['curve'], CHK_PTS[6]['b_path'])
+
+# cfg['scene0_bs'] = PurePidConfig(CHK_PTS[0]['b_stop'], -pi/2)
+cfg['scene1_bs'] = PurePidConfig(CHK_PTS[1]['b_stop'], -pi/2)
+cfg['scene2_bs'] = PurePidConfig(CHK_PTS[2]['b_stop'], -pi/2)
+cfg['scene3_bs'] = PurePidConfig(CHK_PTS[3]['b_stop'], -pi/2)
+cfg['scene4_bs'] = PurePidConfig(CHK_PTS[4]['b_stop'], -pi/2)
+cfg['scene5_bs'] = PurePidConfig(CHK_PTS[5]['b_stop'], -pi/2)
+# cfg['scene6_bs'] = PurePidConfig(CHK_PTS[6]['b_stop'], -pi/2)
+
+cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
+cfg['pointD_s'] = PurePidConfig(POINT_D, -2.10)
+
+cfg['try_trig'] = TryspotBreakTrigger()
+
+for c in cfg.values():
+    c.setFieldColor(match_color)

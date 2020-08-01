@@ -1,4 +1,23 @@
 <launch>
+    <arg name = "joy" default = "/dev/input/js0"/>
+    <arg name = "team"/>
+    <arg name = "color"/>
+
+
+    <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
+        <arg name = "joy" value="$(arg joy)"/>
+        <arg name = "joy_deadzone" value="0.02"/>
+    </include>
+
+    <node name = "ps4_handler" 
+        pkg = "m2_tr2020"
+        type = "ps4_handler.py"
+        output = "screen"
+        respawn = "true">
+        <param name="team" type="str" value="$(arg team)" />
+        <param name="color" type="str" value="$(arg color)" />
+    </node>
+
     <node name = "mode_swticher"
         pkg = "m2_move_base"
         type = "mode_switcher.py"
@@ -10,7 +29,8 @@
         type = "fulltask_server.py"
         output = "screen"
         respawn = "true">
-        <param name="team" type="str" value="rtx" />
+        <param name="team" type="str" value="$(arg team)" />
+        <param name="color" type="str" value="$(arg color)" />
     </node>
 
     <node name = "dji_try_server" 
