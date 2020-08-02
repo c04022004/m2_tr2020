@@ -4,7 +4,7 @@ from geometry_msgs.msg import *
 from m2_move_base.msg import *
 from .fieldConfig import *
 
-MAX_SPEED = 5.0
+MAX_SPEED = 4.5
 
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
@@ -282,16 +282,13 @@ cfg['try_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0
 cfg['rec_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres=0.90)
 cfg['default_trig'] = BreakTrigger(x_min=0.0,x_max=0.00,y_min=0.0,y_max=10.0,thres=0.99)
 
-# for c in cfg.values():
-#     c.setFieldColor(phrase_color_from_launch())
-
-try0_param = [  {'hook_func' : [{'hook0':None}],
+try0_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : "try_trig",
                  'log_msg'   : "start running for receiving pos",},
-                {'hook_func' : [{'hook1':None}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_fs',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
@@ -341,7 +338,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before Try Spot 2",},
-                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                {'hook_func' : [{'hook2':None},{"do_try":None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 2",},
                 {'hook_func' : [{'hook3':None}],
@@ -446,13 +443,13 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
-try6_param = [  {'hook_func' : [{'hook0':None}],
+try6_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene6_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : "try_trig",
                  'log_msg'   : "start running for TRSZ",},
-                {'hook_func' : [{'hook1':None}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene6_fs',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",

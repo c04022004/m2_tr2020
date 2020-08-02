@@ -33,11 +33,11 @@
         <param name="color" type="str" value="$(arg color)" />
     </node>
 
-    <!-- <node name = "dji_try_server" 
+    <node name = "dji_try_server" 
         pkg = "m2_tr2020"
         type = "dji_try_action.py"
         output = "screen"
         respawn = "true">
-    </node> -->
+    </node>
 
 </launch>

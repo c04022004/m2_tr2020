@@ -37,6 +37,9 @@ control_mode = None
 MANUAL = 3
 SEMI_AUTO = 4
 
+# Motor enable state
+motor_en = True
+
 def unblock_try():
     global slider_pos
     if robot_type == ROBOT_TR2:
@@ -61,12 +64,11 @@ def update_led():
         rospy.logerr_throttle("/set_led call failed")
 
 def ps4_cb(ps4_data): # update ps4 data
-    global direct,old_data,control_mode
-    if ps4_data.l1 and ps4_data.r1:
+    global direct,old_data,control_mode,motor_en
+    if ps4_data.l2 and ps4_data.r2:
         if ps4_data.share and not old_data.share:
-            try_call_motors(False)
-        if ps4_data.options and not old_data.options:
-            try_call_motors(True)
+            motor_en = not motor_en
+            try_call_motors(motor_en)
     elif ps4_data.l1 and not old_data.l1:
         if control_mode!= MANUAL:
             control_mode = MANUAL
@@ -75,7 +77,6 @@ def ps4_cb(ps4_data): # update ps4 data
         tr_cancel_pub.publish(GoalID())
         sw_cancel_pub.publish(GoalID())
         dji_cancel_pub.publish(GoalID())
-        io_pub_slider.publish(1)
     elif ps4_data.r1 and not old_data.r1:
         control_mode = SEMI_AUTO
         update_led()
@@ -175,11 +176,23 @@ def ps4_cb(ps4_data): # update ps4 data
             fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == 1) and not old_data.dpad_x: # back to start zone
             if match_color == MATCH_RED:
+                # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
                 goal.goal.scene_id = 6
                 fulltask_pub.publish(goal)
+            elif match_color == MATCH_BLUE:
+                # scene0/go wait 1st ball
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 0
+                fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == -1) and not old_data.dpad_x: # back to start zone
-            if match_color == MATCH_BLUE:
+            if match_color == MATCH_RED:
+                # scene0/go wait 1st ball
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 0
+                fulltask_pub.publish(goal)
+            elif match_color == MATCH_BLUE:
+                # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
                 goal.goal.scene_id = 6
                 fulltask_pub.publish(goal)

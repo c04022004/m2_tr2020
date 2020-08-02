@@ -25,14 +25,14 @@ def rospy_shutdown_cb():
     if _as.is_active():
         _as.set_preempted()
     set_enable_state_srv(0, False)
-    event.set()
+    exec_event.set()
 
 def as_preempt_cb():
     rospy.logwarn("fulltask goal preempt request")
     if _as.is_active():
         _as.set_preempted()
         set_enable_state_srv(0, False)
-    event.set()
+    exec_event.set()
 
 def as_check_preempted():
     if not _as.is_active() :

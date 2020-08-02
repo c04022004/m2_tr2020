@@ -28,6 +28,7 @@ class FulltaskSceneHandler(object):
         # self.dji_client.wait_for_server()
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
+        self.try_event = threading.Event()
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
@@ -103,7 +104,6 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
 
     def hook1(self):
-        self.ball_guard()
         if robot_type == ROBOT_TR2:
              # Can have it delayed using threading
             self.slider_io(1) # slide up the rugby protector
@@ -118,9 +118,8 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR2:
             self.dji_client.send_goal(TryGoal(scene_id=0))
             self.dji_client.wait_for_result()
-            state = self.dji_client.get_state()
-            if state != 3: # not SUCCEEDED
-                self.as_state_decode(state,"dji_try_server")
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+        self.ball_guard()
 
     def hook5(self):
         self.ball_guard()
@@ -143,15 +142,20 @@ class FulltaskSceneHandler(object):
             self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
-            self.dji_client.send_goal(TryGoal(scene_id=3))
-            self.dji_client.wait_for_result()
+            self.dji_client.send_goal_and_wait(TryGoal(scene_id=3))
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+            self.try_event.clear()
+            self.try_event.wait(0.5)
+
+            self.dji_client.send_goal(TryGoal(scene_id=4))
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+            # self.try_event.clear()
+            # self.try_event.wait(0.7)
+
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
-            self.delayed_slider_thread = threading.Timer(1.0, self.ball_guard)
-            self.delayed_slider_thread.start()
-            states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-            state = self.dji_client.get_state()
-            rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
+            # self.delayed_slider_thread = threading.Timer(1.0, self.ball_guard)
+            # self.delayed_slider_thread.start()
 
     def latch_io(self, output=0):
         self.io_pub_latch.publish(output)
@@ -167,15 +171,16 @@ class FulltaskSceneHandler(object):
 
     def process_hooks(self, hook_list):
         for hook_dict in hook_list:
-            for hook, h_arg in hook_dict.items():
-                rospy.logdebug("Processing hook self.%s"%hook)
+            for hook, arg in hook_dict.items():
+                rospy.loginfo("Processing hook self.%s"%hook)
                 try:
                     method = getattr(self, hook)
-                    if h_arg != None:
-                        method(*h_arg)
+                    if arg != None:
+                        method(*arg)
                     else:
                         method()
-                except AttributeError:
+                except AttributeError as e:
+                    rospy.logerr(e)
                     rospy.logerr("Class %s does not implement %s"%(self.__class__.__name__,hook))
 
     def scene_func(self, scene_num, params):
