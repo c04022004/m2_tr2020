@@ -4,6 +4,8 @@ from geometry_msgs.msg import *
 from m2_move_base.msg import *
 from .fieldConfig import *
 
+MAX_SPEED = 5.0
+
 POINT_S = (0.5, 9.5)
 POINT_C = (1.1, 1.1)
 POINT_D = (1.1, 3.5)
@@ -269,8 +271,8 @@ cfg['scene5_b'] = PurePursuitConfig(CHK_PTS[5]['curve'], CHK_PTS[5]['b_path'])
 cfg['scene1_bs'] = PurePidConfig(CHK_PTS[1]['b_stop'], -pi/2)
 cfg['scene2_bs'] = PurePidConfig(CHK_PTS[2]['b_stop'], -pi/2)
 cfg['scene3_bs'] = PurePidConfig(CHK_PTS[3]['b_stop'], -pi/2)
-cfg['scene4_bs'] = PurePidConfig(CHK_PTS[4]['b_stop'], -pi/2)
-cfg['scene5_bs'] = PurePidConfig(CHK_PTS[5]['b_stop'], -pi/2)
+cfg['scene4_bs'] = PurePidConfig(POINT_D, -2.10)
+cfg['scene5_bs'] = PurePidConfig(POINT_D, -2.10)
 # cfg['scene6_bs'] = PurePidConfig(CHK_PTS[6]['b_stop'], -pi/2)
 
 cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
@@ -280,5 +282,209 @@ cfg['try_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0
 cfg['rec_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres=0.90)
 cfg['default_trig'] = BreakTrigger(x_min=0.0,x_max=0.00,y_min=0.0,y_max=10.0,thres=0.99)
 
-for c in cfg.values():
-    c.setFieldColor(phrase_color_from_launch())
+# for c in cfg.values():
+#     c.setFieldColor(phrase_color_from_launch())
+
+try0_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene0_f',
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for receiving pos",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene0_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before receiving pos",},
+                None, None, None,
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try1_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene1_f',
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for Try Spot 1",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene1_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before Try Spot 1",},
+                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "do_try for Try Spot 1",},
+                {'hook_func' : [{'hook3':None}],
+                 'cfg_name'  : 'scene1_b',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "rec_trig",
+                 'log_msg'   : "back to receiving pos",},
+                {'hook_func' : [{'hook4':None}],
+                 'cfg_name'  : 'scene1_bs',
+                 'trig_name' : "default_trig",
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'log_msg'   : "pid into receiving pos",},
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try2_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene2_f',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for Try Spot 2",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene2_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before Try Spot 2",},
+                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "do_try for Try Spot 2",},
+                {'hook_func' : [{'hook3':None}],
+                 'cfg_name'  : 'scene2_b',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "rec_trig",
+                 'log_msg'   : "back to receiving pos",},
+                {'hook_func' : [{'hook4':None}],
+                 'cfg_name'  : 'scene2_bs',
+                 'trig_name' : "default_trig",
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'log_msg'   : "pid into receiving pos",},
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try3_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene3_f',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for Try Spot 3",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene3_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before Try Spot 3",},
+                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "do_try for Try Spot 3",},
+                {'hook_func' : [{'hook3':None}],
+                 'cfg_name'  : 'scene3_b',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "rec_trig",
+                 'log_msg'   : "back to receiving pos",},
+                {'hook_func' : [{'hook4':None}],
+                 'cfg_name'  : 'scene3_bs',
+                 'trig_name' : "default_trig",
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'log_msg'   : "pid into receiving pos",},
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try4_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene4_f',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for Try Spot 4",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene4_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before Try Spot 4",},
+                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "do_try for Try Spot 4",},
+                {'hook_func' : [{'hook3':None}],
+                 'cfg_name'  : 'scene4_b',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "rec_trig",
+                 'log_msg'   : "back to receiving pos",},
+                {'hook_func' : [{'hook4':None}],
+                 'cfg_name'  : 'scene4_bs',
+                 'trig_name' : "default_trig",
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'log_msg'   : "pid into receiving pos",},
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try5_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene5_f',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for Try Spot 5",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene5_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before Try Spot 5",},
+                {'hook_func' : [{'hook2':None},{'do_try':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "do_try for Try Spot 5",},
+                {'hook_func' : [{'hook3':None}],
+                 'cfg_name'  : 'scene5_b',
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "rec_trig",
+                 'log_msg'   : "back to receiving pos",},
+                {'hook_func' : [{'hook4':None}],
+                 'cfg_name'  : 'scene5_bs',
+                 'trig_name' : "default_trig",
+                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'log_msg'   : "pid into receiving pos",},
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try6_param = [  {'hook_func' : [{'hook0':None}],
+                 'cfg_name'  : 'scene6_f',
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                 'trig_name' : "try_trig",
+                 'log_msg'   : "start running for TRSZ",},
+                {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene6_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before TRSZ",},
+                None, None, None,
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try7_param = [  {'hook_func' : [{'hookPH':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointC",},
+                {'hook_func' : [{'hookPH':None}],
+                 'cfg_name'  : 'pointC_s',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointC",},
+                None, None, None,
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try8_param = [  {'hook_func' : [{'hookPH':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointD",},
+                {'hook_func' : [{'hookPH':None}],
+                 'cfg_name'  : 'pointD_s',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None,
+                {'hook_func' : [{'hook5':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+

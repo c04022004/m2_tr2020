@@ -26,8 +26,8 @@ robot_type = None
 # Define PS4 LED colors, 0.1s duration
 BRIGHT_RED = (255,0,0,0.1)
 DIM_RED = (50,0,0,0.1)
-BRIGHT_Blue = (0,0,255,0.1)
-DIM_Blue = (0,0,50,0.1)
+BRIGHT_BLUE = (0,0,255,0.1)
+DIM_BLUE = (0,0,50,0.1)
 
 # Saving slider position for TR2
 slider_pos = False
@@ -68,8 +68,9 @@ def ps4_cb(ps4_data): # update ps4 data
         if ps4_data.options and not old_data.options:
             try_call_motors(True)
     elif ps4_data.l1 and not old_data.l1:
-        control_mode = MANUAL
-        orientation_helper.stop_z()
+        if control_mode!= MANUAL:
+            control_mode = MANUAL
+            orientation_helper.stop_z()
         update_led()
         tr_cancel_pub.publish(GoalID())
         sw_cancel_pub.publish(GoalID())
@@ -82,10 +83,23 @@ def ps4_cb(ps4_data): # update ps4 data
     if control_mode == MANUAL:
         # learnt the max speed of 1:15 motors the hard way, 4ms^-1 will burn the motor board (no longer true in 2020)
         # 3 ms^-1 linear + 1.2 rads^-1 almost max out human reaction
+
+        global_vel_x = 0.0
+        global_vel_y = 0.0
+        global_vel_z = 0.0
+        if match_color == MATCH_RED:
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx)
+            global_vel_z = ps4_data.hat_rx*max_rotational_speed
+        elif match_color == MATCH_BLUE:
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly*-1)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx*-1)
+            global_vel_z = ps4_data.hat_rx*max_rotational_speed
+
         twist = Twist()
-        twist.linear.x  = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx*-1)
-        twist.linear.y  = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly)
-        twist.angular.z = ps4_data.hat_rx*max_rotational_speed
+        twist.linear.x  = global_vel_x
+        twist.linear.y  = global_vel_y
+        twist.angular.z = global_vel_z
         vel_magnitude = np.hypot(twist.linear.x, twist.linear.y)
         if np.isclose(twist.angular.z,0.0):
             orientation_helper.stop_z()
@@ -159,10 +173,16 @@ def ps4_cb(ps4_data): # update ps4 data
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 8
             fulltask_pub.publish(goal)
+        if (ps4_data.dpad_x == 1) and not old_data.dpad_x: # back to start zone
+            if match_color == MATCH_RED:
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 6
+                fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == -1) and not old_data.dpad_x: # back to start zone
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 6
-            fulltask_pub.publish(goal)
+            if match_color == MATCH_BLUE:
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 6
+                fulltask_pub.publish(goal)
     old_data = ps4_data
 
 def try_call_motors(set_bool):
