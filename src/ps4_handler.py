@@ -9,6 +9,7 @@ from m2_ps4.srv import SetRgb, SetRgbRequest
 from std_msgs.msg import Bool
 from m2_tr2020.msg import *
 import numpy as np
+from configs.fieldConfig import *
 import chassis_control
 
 direct = ChannelTwist()
@@ -18,17 +19,9 @@ max_rotational_speed = 1.2
 
 old_data = Ps4Data()
 
-# Select robot type
-robot_sel = None
-ROBOT_N   = 0
-ROBOT_TR1 = 1
-ROBOT_TR2 = 2
-
-# Match field color
+# ROS launch config
 match_color = None
-MATCH_NONE = 0
-MATCH_RED  = 1
-MATCH_BLUE = 2
+robot_type = None
 
 # Define PS4 LED colors, 0.1s duration
 BRIGHT_RED = (255,0,0,0.1)
@@ -203,24 +196,8 @@ fulltask_pub = rospy.Publisher('/tr_server/goal', FulltaskActionGoal, queue_size
 kmt_helper = chassis_control.FrameTranslation()
 orientation_helper = chassis_control.RotationCompesation()
 
-color = rospy.get_param("~color", "red")
-if color == "red":
-    match_color = MATCH_RED
-elif color == "blue":
-    match_color = MATCH_BLUE
-else:
-    match_color = MATCH_RED
-    rospy.logwarn("No valid color specified, defaulting to RED")
-update_led()
-
-team = rospy.get_param("~team", "rx")
-if team == "rx":
-    robot_type = ROBOT_TR1
-elif team == "rtx":
-    robot_type = ROBOT_TR2
-else:
-    rospy.logerr("No valid team specified, quitting")
-    exit(1)
+match_color = phrase_color_from_launch()
+robot_type = phrase_team_from_launch()
 
 rospy.spin()
 

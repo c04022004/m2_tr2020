@@ -116,10 +116,16 @@ def execute_cb(goal):
 rospy.init_node("dji_try_server")
 rate = rospy.Rate(100)
 
-rospy.wait_for_service('/dji/set_offset')
-rospy.wait_for_service('/dji/set_current_limit')
-rospy.wait_for_service('/dji/activate_p_mode')
-rospy.wait_for_service('/dji/set_enable_state')
+while not rospy.is_shutdown():
+    try:
+        rospy.wait_for_service('/dji/set_offset', 0.1)
+        rospy.wait_for_service('/dji/set_current_limit', 0.1)
+        rospy.wait_for_service('/dji/activate_p_mode', 0.1)
+        rospy.wait_for_service('/dji/set_enable_state', 0.1)
+        break
+    except rospy.ROSException:
+        rospy.logwarn_throttle(1,"Waiting for DJI related services")
+
 for i in range(NUM_MOTORS):
     rospy.Subscriber("/dji/m%d/p_feedback" % i, Int32, get_position_cb, i, queue_size = 1)
 

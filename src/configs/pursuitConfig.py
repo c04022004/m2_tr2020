@@ -214,13 +214,15 @@ class PurePidConfig: # Default setting of MATCH_RED
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PID, pure_pid_data=pure_pid_data)
         return goal
 
-class TryspotBreakTrigger:
-    x_min = 5.10
-    x_max = 6.65
-    y_min = 0.00
-    y_max = 10.0
-    thres = 0.90
-    color = None
+class BreakTrigger:
+    field_color = MATCH_RED
+
+    def __init__(self, x_min, x_max, y_min, y_max, thres):
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
+        self.thres = thres
 
     def setFieldColor(self, color):
         if color not in [MATCH_RED, MATCH_BLUE]:
@@ -228,13 +230,14 @@ class TryspotBreakTrigger:
         if self.field_color != color:
             self.positionFlipX()
             self.field_color = color
+    
+    def positionFlipX(self):
+        self.x_min = 13.3 - self.x_min
+        self.x_max = 13.3 - self.x_max
+        self.x_min,self.x_max = self.x_max,self.x_min
 
-    def getTriggers(self, color):
-        if self.color == MATCH_RED:
-            return (self.x_min, self.x_max, self.y_min, self.y_max, self.thres)
-        elif self.color == MATCH_BLUE:
-            return (13.3-self.x_min, 13.3-self.x_max, self.y_min, self.y_max, self.thres)
-        return None
+    def getTriggers(self):
+        return (self.x_min, self.x_max, self.y_min, self.y_max, self.thres)
 
 cfg = {}
 
@@ -273,7 +276,9 @@ cfg['scene5_bs'] = PurePidConfig(CHK_PTS[5]['b_stop'], -pi/2)
 cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
 cfg['pointD_s'] = PurePidConfig(POINT_D, -2.10)
 
-cfg['try_trig'] = TryspotBreakTrigger()
+cfg['try_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)
+cfg['rec_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres=0.90)
+cfg['default_trig'] = BreakTrigger(x_min=0.0,x_max=0.00,y_min=0.0,y_max=10.0,thres=0.99)
 
 for c in cfg.values():
-    c.setFieldColor(match_color)
+    c.setFieldColor(phrase_color_from_launch())
