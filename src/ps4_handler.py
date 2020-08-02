@@ -9,6 +9,7 @@ from m2_ps4.srv import SetRgb, SetRgbRequest
 from std_msgs.msg import Bool
 from m2_tr2020.msg import *
 import numpy as np
+from configs.fieldConfig import *
 import chassis_control
 
 direct = ChannelTwist()
@@ -18,23 +19,15 @@ max_rotational_speed = 1.2
 
 old_data = Ps4Data()
 
-# Select robot type
-robot_sel = None
-ROBOT_N   = 0
-ROBOT_TR1 = 1
-ROBOT_TR2 = 2
-
-# Match field color
+# ROS launch config
 match_color = None
-MATCH_NONE = 0
-MATCH_RED  = 1
-MATCH_BLUE = 2
+robot_type = None
 
 # Define PS4 LED colors, 0.1s duration
 BRIGHT_RED = (255,0,0,0.1)
 DIM_RED = (50,0,0,0.1)
-BRIGHT_Blue = (0,0,255,0.1)
-DIM_Blue = (0,0,50,0.1)
+BRIGHT_BLUE = (0,0,255,0.1)
+DIM_BLUE = (0,0,50,0.1)
 
 # Saving slider position for TR2
 slider_pos = False
@@ -43,6 +36,9 @@ slider_pos = False
 control_mode = None
 MANUAL = 3
 SEMI_AUTO = 4
+
+# Motor enable state
+motor_en = True
 
 def unblock_try():
     global slider_pos
@@ -68,20 +64,19 @@ def update_led():
         rospy.logerr_throttle("/set_led call failed")
 
 def ps4_cb(ps4_data): # update ps4 data
-    global direct,old_data,control_mode
-    if ps4_data.l1 and ps4_data.r1:
+    global direct,old_data,control_mode,motor_en
+    if ps4_data.l2 and ps4_data.r2:
         if ps4_data.share and not old_data.share:
-            try_call_motors(False)
-        if ps4_data.options and not old_data.options:
-            try_call_motors(True)
+            motor_en = not motor_en
+            try_call_motors(motor_en)
     elif ps4_data.l1 and not old_data.l1:
-        control_mode = MANUAL
-        orientation_helper.stop_z()
+        if control_mode!= MANUAL:
+            control_mode = MANUAL
+            orientation_helper.stop_z()
         update_led()
         tr_cancel_pub.publish(GoalID())
         sw_cancel_pub.publish(GoalID())
         dji_cancel_pub.publish(GoalID())
-        io_pub_slider.publish(1)
     elif ps4_data.r1 and not old_data.r1:
         control_mode = SEMI_AUTO
         update_led()
@@ -89,10 +84,23 @@ def ps4_cb(ps4_data): # update ps4 data
     if control_mode == MANUAL:
         # learnt the max speed of 1:15 motors the hard way, 4ms^-1 will burn the motor board (no longer true in 2020)
         # 3 ms^-1 linear + 1.2 rads^-1 almost max out human reaction
+
+        global_vel_x = 0.0
+        global_vel_y = 0.0
+        global_vel_z = 0.0
+        if match_color == MATCH_RED:
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx)
+            global_vel_z = ps4_data.hat_rx*max_rotational_speed
+        elif match_color == MATCH_BLUE:
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly*-1)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx*-1)
+            global_vel_z = ps4_data.hat_rx*max_rotational_speed
+
         twist = Twist()
-        twist.linear.x  = np.copysign(np.abs(ps4_data.hat_lx)**1.75*max_linear_speed, ps4_data.hat_lx*-1)
-        twist.linear.y  = np.copysign(np.abs(ps4_data.hat_ly)**1.75*max_linear_speed, ps4_data.hat_ly)
-        twist.angular.z = ps4_data.hat_rx*max_rotational_speed
+        twist.linear.x  = global_vel_x
+        twist.linear.y  = global_vel_y
+        twist.angular.z = global_vel_z
         vel_magnitude = np.hypot(twist.linear.x, twist.linear.y)
         if np.isclose(twist.angular.z,0.0):
             orientation_helper.stop_z()
@@ -166,10 +174,28 @@ def ps4_cb(ps4_data): # update ps4 data
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 8
             fulltask_pub.publish(goal)
+        if (ps4_data.dpad_x == 1) and not old_data.dpad_x: # back to start zone
+            if match_color == MATCH_RED:
+                # back to start zone (TRSZ)
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 6
+                fulltask_pub.publish(goal)
+            elif match_color == MATCH_BLUE:
+                # scene0/go wait 1st ball
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 0
+                fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == -1) and not old_data.dpad_x: # back to start zone
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 6
-            fulltask_pub.publish(goal)
+            if match_color == MATCH_RED:
+                # scene0/go wait 1st ball
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 0
+                fulltask_pub.publish(goal)
+            elif match_color == MATCH_BLUE:
+                # back to start zone (TRSZ)
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 6
+                fulltask_pub.publish(goal)
     old_data = ps4_data
 
 def try_call_motors(set_bool):
@@ -203,24 +229,8 @@ fulltask_pub = rospy.Publisher('/tr_server/goal', FulltaskActionGoal, queue_size
 kmt_helper = chassis_control.FrameTranslation()
 orientation_helper = chassis_control.RotationCompesation()
 
-color = rospy.get_param("~color", "red")
-if color == "red":
-    match_color = MATCH_RED
-elif color == "blue":
-    match_color = MATCH_BLUE
-else:
-    match_color = MATCH_RED
-    rospy.logwarn("No valid color specified, defaulting to RED")
-update_led()
-
-team = rospy.get_param("~team", "rx")
-if team == "rx":
-    robot_type = ROBOT_TR1
-elif team == "rtx":
-    robot_type = ROBOT_TR2
-else:
-    rospy.logerr("No valid team specified, quitting")
-    exit(1)
+match_color = phrase_color_from_launch()
+robot_type = phrase_team_from_launch()
 
 rospy.spin()
 

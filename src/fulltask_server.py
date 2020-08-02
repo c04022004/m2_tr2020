@@ -10,17 +10,10 @@ from m2_tr2020.msg import *
 import time
 from actionlib_msgs.msg import GoalStatus
 from configs.pursuitConfig import *
+from configs.fieldConfig import *
 
-
-# MATCH_NONE = 0
-# MATCH_RED  = 1
-# MATCH_BLUE = 2
-
-# ROBOT_N   = 0
-# ROBOT_TR1 = 1
-# ROBOT_TR2 = 2
-
-MAX_SPEED = 5.0
+match_color = None
+robot_type = None
 
 class FulltaskSceneHandler(object):
 
@@ -32,81 +25,67 @@ class FulltaskSceneHandler(object):
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
         self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
+        # self.dji_client.wait_for_server()
         self.delayed_lifter_thread = None
+        self.delayed_slider_thread = None
+        self.try_event = threading.Event()
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
 
         self._action_name = "tr_server"
         self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start=False)
-        self.stop_polygon_pub = rospy.Publisher("stop_polygon", PolygonStamped, queue_size = 0)
-
+        self.path_finish_event = threading.Event()
+        self._as.register_preempt_callback(self.as_preempt_cb)
         self._as.start()
+        rospy.on_shutdown(self.rospy_shutdown_cb)
 
-        if (match_color == MATCH_BLUE):
-            rospy.loginfo("tr_server started with BLUE")
-        elif (match_color == MATCH_RED):
-            rospy.loginfo("tr_server started with RED")
-        else:
+        if match_color not in [MATCH_RED, MATCH_BLUE]:
             rospy.logerr("No field color selected, aborting!")
             exit(1)
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
         # you can even set self.move_base_client to an invalid object such that it is uncallable in the remainder of that scene
-
+        # The reverse action should be evemt.clear()
         return (True, "event set")
-
-    def gen_intermediate_func(self, event, thres=0.98):
-        def intermediate_func(msg):
-            # pose = msg.cur_pos.pose.pose
-            # rospy.loginfo_throttle(0.5, "Intermediate position: %f %f %f"%(pose.position.x, pose.position.y, msg.progress))
-            if (msg.progress > thres):
-                event.set() # python threading event
-            
-        return intermediate_func
     
-    def gen_intermediate_func_pose(self, event, x_min, x_max, y_min, y_max, thres=0.99):
+    def gen_intermediate_func(self, x_min=0.0, x_max=0.0, y_min=0.0, y_max=0.0, thres=0.99):
         def intermediate_func(msg):
             pose = msg.cur_pos.pose.pose
-            pose.position.x, pose.position.y
             if pose.position.x >= x_min and pose.position.x <= x_max and\
                 pose.position.y >= y_min and pose.position.y <= y_max:
-                event.set()
-            
+                self.path_finish_event.set()
             if (msg.progress > thres):
-                event.set() # python threading event
-            
+                self.path_finish_event.set() # python threading event
         return intermediate_func
 
-    def gen_shutdown_func(self, event):
-        def shutdown_func():
-            rospy.logwarn("shutdown request received")
-            if self._as.is_active():
-                self.move_base_client.cancel_all_goals()
-                self.dji_client.cancel_all_goals()
-                self._as.set_preempted()
-            event.set()
-        return shutdown_func
+    def rospy_shutdown_cb(self):
+        rospy.logwarn("shutdown request received")
+        if self._as.is_active():
+            self.move_base_client.cancel_all_goals()
+            self.dji_client.cancel_all_goals()
+            self._as.set_preempted()
+        self.path_finish_event.set()
 
-    def gen_move_base_client_done_cb(self, event):
-        def done_cb(state, result):
-            # from actionlib_msgs.msg import GoalStatus
-            # State enum: http://docs.ros.org/kinetic/api/actionlib_msgs/html/msg/GoalStatus.html
-            states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-            rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
-            event.set()
-        return done_cb
+    def move_base_client_done_cb(self, state, result):
+        # from actionlib_msgs.msg import GoalStatus
+        # State enum: http://docs.ros.org/kinetic/api/actionlib_msgs/html/msg/GoalStatus.html
+        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
+        rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
+        self.path_finish_event.set()
+    
+    def as_state_decode(self, state, action_name):
+        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
+        rospy.logwarn("%s goal done: State=%d %s"%(action_name, state, states[state]))
 
-    def gen_preempt_cb(self, event):
-        def preempt_cb(): # only called when the goal is cancelled externally outisde of this node (e.g. publishing to tr_server/cancel)
-            rospy.logwarn("fulltask goal preempt request")
-            if self._as.is_active():
-                self.move_base_client.cancel_all_goals()
-                self.dji_client.cancel_all_goals()
-                self._as.set_preempted()
-            event.set()
-        return preempt_cb
+    def as_preempt_cb(self): # only called when the goal is cancelled externally outisde of this node (e.g. publishing to tr_server/cancel)
+        rospy.logwarn("fulltask goal preempt request")
+        if self._as.is_active():
+            self.move_base_client.cancel_all_goals()
+            self.dji_client.cancel_all_goals()
+            self._as.set_preempted()
+        self.path_finish_event.set()
 
     def as_check_preempted(self):
         if not self._as.is_active() :
@@ -115,22 +94,68 @@ class FulltaskSceneHandler(object):
             rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
             return True
         return False
+    
+    def hookPH(self):
+        pass # Just a placeholder here
+    
+    def hook0(self):
+        self.ball_guard()
+        if robot_type == ROBOT_TR2:
+            self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
+
+    def hook1(self):
+        if robot_type == ROBOT_TR2:
+             # Can have it delayed using threading
+            self.slider_io(1) # slide up the rugby protector
+
+    def hook2(self):
+        pass
+
+    def hook3(self):
+        pass
+
+    def hook4(self):
+        if robot_type == ROBOT_TR2:
+            self.dji_client.send_goal(TryGoal(scene_id=0))
+            self.dji_client.wait_for_result()
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+        self.ball_guard()
+
+    def hook5(self):
+        self.ball_guard()
 
     def do_try(self):
-        if robot_type == ROBOT_TR1:
+        if robot_type == ROBOT_NONE:
+            rospy.logwarn("If you are not using fake_robot, go check your code!")
+            rospy.logwarn("Default to a 1.5 second sleep when ROBOT_NONE is set!")
+            # self.path_finish_event.wait(1.5)
+            time.sleep(1.5)
+            self.as_check_preempted()
+            return
+        elif robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
-            self.io_pub_latch.publish(0) # Take advantage of the mechanical delay
-            # if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
-            #     self.delayed_lifter_thread.cancel()
-            # self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
-            # self.delayed_lifter_thread.start()
+            self.path_finish_event.wait(0.75)
+            if self.as_check_preempted(): return
+            if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
+                self.delayed_lifter_thread.cancel()
+            self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
+            self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
-            self.dji_client.send_goal(TryGoal(scene_id=1))
-            self.dji_client.wait_for_result()
-            states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-            state = self.dji_client.get_state()
-            rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
+            self.dji_client.send_goal_and_wait(TryGoal(scene_id=3))
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+            self.try_event.clear()
+            self.try_event.wait(0.5)
+
+            self.dji_client.send_goal(TryGoal(scene_id=4))
+            self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
+            # self.try_event.clear()
+            # self.try_event.wait(0.7)
+
+            if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
+                self.delayed_slider_thread.cancel()
+            # self.delayed_slider_thread = threading.Timer(1.0, self.ball_guard)
+            # self.delayed_slider_thread.start()
 
     def latch_io(self, output=0):
         self.io_pub_latch.publish(output)
@@ -144,424 +169,51 @@ class FulltaskSceneHandler(object):
         elif robot_type == ROBOT_TR2:
             self.slider_io(0) # down
 
-    def scene_0(self):
-        rospy.loginfo("Fulltask scene 0 start!")
+    def process_hooks(self, hook_list):
+        for hook_dict in hook_list:
+            for hook, arg in hook_dict.items():
+                rospy.loginfo("Processing hook self.%s"%hook)
+                try:
+                    method = getattr(self, hook)
+                    if arg != None:
+                        method(*arg)
+                    else:
+                        method()
+                except AttributeError as e:
+                    rospy.logerr(e)
+                    rospy.logerr("Class %s does not implement %s"%(self.__class__.__name__,hook))
+
+    def scene_func(self, scene_num, params):
+        rospy.loginfo("Fulltask scene %d start!"% scene_num)
         start_time = time.time()
 
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene0_f_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene0_f_cfg.goalConstructor(speed=MAX_SPEED*1.0, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
+        # --- Try sequence - stage0~4 ---
+        for i in range(5):
+            if params[i] != None:
+                # Processing the hooks
+                self.process_hooks(params[i]['hook_func'])
+                # Start the pure_pursuit events
+                if params[i]['cfg_name'] != None:
+                    self.path_finish_event.clear()
+                    self.move_base_client.send_goal(
+                        cfg[params[i]['cfg_name']].goalConstructor(**params[i]['cfg_param']),
+                        feedback_cb=self.gen_intermediate_func(*cfg[params[i]['trig_name']].getTriggers()),
+                        done_cb=self.move_base_client_done_cb)
+                    rospy.loginfo(params[i]['log_msg'])
+                    self.path_finish_event.wait()
+                    if self.as_check_preempted(): return
 
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene0_s_cfg.positionFlipX()
-        self.move_base_client.send_goal(
-            scene0_s_cfg.goalConstructor(speed=MAX_SPEED*0.5, kP=3.0, kI=0.0001, kD=1.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 1")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
+        # --- Try sequence - stage5 ---
+        # Processing the hooks
+        self.process_hooks(params[5]['hook_func'])
+        self.path_finish_event.clear()
+        if params[5]['cfg_name'] != None:
+            rospy.logerr("Not suppose to run more path here!")
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
 
-    def scene_1(self):
-        rospy.loginfo("Fulltask scene 1 start!")
-        start_time = time.time()
-
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene1_f_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene1_f_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 1")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene1_s_cfg.positionFlipX()
-        self.move_base_client.send_goal(
-            scene1_s_cfg.goalConstructor(speed=MAX_SPEED*0.5, kP=2.0, kI=0.0001, kD=2.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 1")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.do_try()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene1_b_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene1_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_2(self):
-        rospy.loginfo("Fulltask scene 2 start!")
-        start_time = time.time()
-
-        self.ball_guard()
-        self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the ruby
-        self.path_finish_event = threading.Event()
-        try_trig = try_cfg.getTriggers(MATCH_RED)
-        if(match_color == MATCH_BLUE):
-            scene2_f_cfg.knotsFlipX()
-            try_trig = try_cfg.getTriggers(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene2_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.8),
-            feedback_cb=self.gen_intermediate_func_pose(self.path_finish_event,*try_trig),
-            done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 2")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.io_pub_slider.publish(1)
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene2_s_cfg.positionFlipX()
-        self.move_base_client.send_goal(
-            scene2_s_cfg.goalConstructor(speed=MAX_SPEED*0.5, kP=3.0, kI=0.0001, kD=2.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 2")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.do_try()
-        
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene2_b_cfg.knotsFlipX()
-        self.move_base_client.send_goal(
-            scene2_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event,0.9), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        self.dji_client.send_goal(TryGoal(scene_id=0))
-        self.dji_client.wait_for_result()
-        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-        state = self.dji_client.get_state()
-        rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
-        # PID stoping at POINT_C
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointC_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_C")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-
-    def scene_3(self):
-        rospy.loginfo("Fulltask scene 3 start!")
-        start_time = time.time()
-
-        self.ball_guard()
-        self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the ruby
-        self.path_finish_event = threading.Event()
-        try_trig = try_cfg.getTriggers(MATCH_RED)
-        if(match_color == MATCH_BLUE):
-            scene3_f_cfg.setFieldColor(MATCH_BLUE)
-            try_trig = try_cfg.getTriggers(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene3_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func_pose(self.path_finish_event,*try_trig),
-            done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 3")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.io_pub_slider.publish(1)
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene3_s_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene3_s_cfg.goalConstructor(speed=MAX_SPEED*0.5, kP=3.0, kI=0.0001, kD=2.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 3")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.do_try()
- 
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene3_b_cfg.setFieldColor(MATCH_BLUE)
-            try_trig = try_cfg.getTriggers(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene3_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0,curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event,0.9), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        self.dji_client.send_goal(TryGoal(scene_id=0))
-        self.dji_client.wait_for_result()
-        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-        state = self.dji_client.get_state()
-        rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
-        # PID stoping at POINT_C
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointC_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_C")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_4(self):
-        rospy.loginfo("Fulltask scene 4 start!")
-        start_time = time.time()
-
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        try_trig = try_cfg.getTriggers(MATCH_RED)
-        if(match_color == MATCH_BLUE):
-            scene4_f_cfg.setFieldColor(MATCH_BLUE)
-            try_trig = try_cfg.getTriggers(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene4_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func_pose(self.path_finish_event,*try_trig),
-            done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 4")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-        
-        self.io_pub_slider.publish(1)
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene4_s_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene4_s_cfg.goalConstructor(speed=MAX_SPEED*0.5, kP=3.5, kI=0.0005, kD=2.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 4")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.do_try()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene4_b_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene4_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=2.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event),
-            done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        # PID stoping at POINT_D
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointD_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_D")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_5(self):
-        rospy.loginfo("Fulltask scene 5 start!")
-        start_time = time.time()
-
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        try_trig = try_cfg.getTriggers(MATCH_RED)
-        if(match_color == MATCH_BLUE):
-            scene5_f_cfg.setFieldColor(MATCH_BLUE)
-            try_trig = try_cfg.getTriggers(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene5_f_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.75),
-            feedback_cb=self.gen_intermediate_func_pose(self.path_finish_event,*try_trig),
-            done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to Try Spot 5")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        self.io_pub_slider.publish(1)
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene5_s_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene5_s_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.5, kI=0.0005, kD=2.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("breaking stage before Try Spot 3")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-        
-        self.do_try()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene5_b_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            scene5_b_cfg.goalConstructor(speed=MAX_SPEED*0.8, radius=3.0, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.5),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to receiving pos")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        # PID stoping at POINT_D
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointD_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_D")
-        self.path_finish_event.wait()
-        self.ball_guard()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_6(self):
-        rospy.loginfo("Fulltask scene 6 start!")
-        start_time = time.time()
-
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            scene0_b_cfg.setFieldColor(MATCH_BLUE)
-
-        self.ball_guard()
-        self.move_base_client.send_goal(
-            scene0_b_cfg.goalConstructor(speed=MAX_SPEED*0.5, radius=1.5, stop_min_speed=0.75, velocity_shift_kP=6.0, curvature_penalty_kP=0.4),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("goal to TRSZ")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("try done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_7(self):
-        rospy.loginfo("Fulltask scene 7 start!")
-        start_time = time.time()
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointC_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointC_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_C")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("move done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_8(self):
-        rospy.loginfo("Fulltask scene 8 start!")
-        start_time = time.time()
-        self.ball_guard()
-        self.path_finish_event = threading.Event()
-        if(match_color == MATCH_BLUE):
-            pointD_cfg.setFieldColor(MATCH_BLUE)
-        self.move_base_client.send_goal(
-            pointD_cfg.goalConstructor(speed=MAX_SPEED*0.6, kP=3.0, kI=0.0001, kD=4.0),
-            feedback_cb=self.gen_intermediate_func(self.path_finish_event), done_cb=self.gen_move_base_client_done_cb(self.path_finish_event))
-        rospy.on_shutdown(self.gen_shutdown_func(self.path_finish_event))
-        self._as.register_preempt_callback(self.gen_preempt_cb(self.path_finish_event))
-        rospy.loginfo("moving to POINT_D")
-        self.path_finish_event.wait()
-        if self.as_check_preempted(): return
-
-        rospy.loginfo("move done. time=%f"%(time.time()-start_time))
-        self._as.set_succeeded(FulltaskResult())
-
-    def scene_9(self):
+    def sample_scene(self):
         rospy.loginfo("move done. time=%f"%(time.time()-start_time))
         self._as.set_succeeded(FulltaskResult())
         pass
@@ -569,48 +221,31 @@ class FulltaskSceneHandler(object):
     def execute_cb(self, goal):
         # print(goal)
         if (goal.scene_id == 0):
-            self.scene_0()
+            self.scene_func(0, try0_param)
         if (goal.scene_id == 1):
-            self.scene_1()
+            self.scene_func(1, try1_param)
         if (goal.scene_id == 2):
-            self.scene_2()
+            self.scene_func(2, try2_param)
         if (goal.scene_id == 3):
-            self.scene_3()
+            self.scene_func(3, try3_param)
         if (goal.scene_id == 4):
-            self.scene_4()
+            self.scene_func(4, try4_param)
         if (goal.scene_id == 5):
-            self.scene_5()
+            self.scene_func(5, try5_param)
         if (goal.scene_id == 6):
-            self.scene_6()
+            self.scene_func(6, try6_param)
         if (goal.scene_id == 7):
-            self.scene_7()
+            self.scene_func(7, try7_param)
         if (goal.scene_id == 8):
-            self.scene_8()
+            self.scene_func(8, try8_param)
         if (goal.scene_id == 9):
-            self.scene_9()
+            self.sample_scene()
 
 if __name__ == "__main__":
     rospy.init_node('tr_server')
-    color = rospy.get_param("~color", "red")
-    if color == "red":
-        match_color = MATCH_RED
-        rospy.loginfo("tr_server started with MATCH_RED")
-    elif color == "blue":
-        match_color = MATCH_BLUE
-        rospy.loginfo("tr_server started with MATCH_BLUE")
-    else:
-        match_color = MATCH_RED
-        rospy.logwarn("No valid color specified, defaulting to RED")
-
-    team = rospy.get_param("~team", "rx")
-    if team == "rx":
-        robot_type = ROBOT_TR1
-        rospy.loginfo("tr_server started with ROBOT_TR1")
-    elif team == "rtx":
-        robot_type = ROBOT_TR2
-        rospy.loginfo("tr_server started with ROBOT_TR2")
-    else:
-        rospy.logerr("No valid team specified, quitting")
-        exit(1)
+    match_color = phrase_color_from_launch()
+    robot_type = phrase_team_from_launch()
+    for c in cfg.values():
+        c.setFieldColor(match_color)
     fulltask_server = FulltaskSceneHandler()
     rospy.spin()
