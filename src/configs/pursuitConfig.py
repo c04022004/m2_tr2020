@@ -3,6 +3,7 @@ from math import pi
 from geometry_msgs.msg import *
 from m2_move_base.msg import *
 from .fieldConfig import *
+from .commConfig import *
 
 MAX_SPEED = 4.5
 
@@ -282,7 +283,10 @@ cfg['try_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0
 cfg['rec_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres=0.90)
 cfg['default_trig'] = BreakTrigger(x_min=0.0,x_max=0.00,y_min=0.0,y_max=10.0,thres=0.99)
 
-try0_param = [  {'hook_func' : [{'ball_guard':None}],
+try0_param = [  {'hook_func' : [{'call_pr':[START_COMMAND]}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,},
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -293,7 +297,7 @@ try0_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before receiving pos",},
-                None, None, None,
+                None, None,
                 {'hook_func' : [{'hook5':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]

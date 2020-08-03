@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy, actionlib, threading
 from m2_move_base.msg import *
+from m2_wireless_comm.srv import Request
 from std_msgs.msg import Bool
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import *
@@ -11,6 +12,7 @@ import time
 from actionlib_msgs.msg import GoalStatus
 from configs.pursuitConfig import *
 from configs.fieldConfig import *
+from configs.commConfig import *
 
 match_color = None
 robot_type = None
@@ -28,6 +30,7 @@ class FulltaskSceneHandler(object):
         # self.dji_client.wait_for_server()
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
+        self.delayed_call_pr_thread = None
         self.try_event = threading.Event()
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
@@ -43,6 +46,8 @@ class FulltaskSceneHandler(object):
         if match_color not in [MATCH_RED, MATCH_BLUE]:
             rospy.logerr("No field color selected, aborting!")
             exit(1)
+
+        self.command_pr_srv = rospy.ServiceProxy('request_partner_info', Request)
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
@@ -112,7 +117,10 @@ class FulltaskSceneHandler(object):
         pass
 
     def hook3(self):
-        pass
+        if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.isAlive():
+            self.delayed_call_pr_thread.cancel()
+        self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(TRY_DONE_NOTICE,))
+        self.delayed_call_pr_thread.start()
 
     def hook4(self):
         if robot_type == ROBOT_TR2:
@@ -122,6 +130,7 @@ class FulltaskSceneHandler(object):
         self.ball_guard()
 
     def hook5(self):
+        self.call_pr(CAN_PASS_COMMAND)
         self.ball_guard()
 
     def do_try(self):
@@ -168,6 +177,10 @@ class FulltaskSceneHandler(object):
             self.latch_io(0) # retract
         elif robot_type == ROBOT_TR2:
             self.slider_io(0) # down
+
+    def call_pr(self, command):
+        print("CALLL PR: {}".format(command))
+        self.command_pr_srv(command)
 
     def process_hooks(self, hook_list):
         for hook_dict in hook_list:
