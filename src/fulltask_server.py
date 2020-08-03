@@ -27,7 +27,7 @@ class FulltaskSceneHandler(object):
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
         self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
-        # self.dji_client.wait_for_server()
+        self.dji_client.wait_for_server()
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
         self.delayed_call_pr_thread = None
@@ -105,21 +105,25 @@ class FulltaskSceneHandler(object):
     
     def hook0(self):
         self.ball_guard()
-        if robot_type == ROBOT_TR2:
-            self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
 
     def hook1(self):
         if robot_type == ROBOT_TR2:
-             # Can have it delayed using threading
-            self.slider_io(1) # slide up the rugby protector
+            self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
+            if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
+                self.delayed_slider_thread.cancel()
+            self.delayed_slider_thread = threading.Timer(0.75, self.unlock_ball)
+            self.delayed_slider_thread.start()
 
     def hook2(self):
         pass
 
     def hook3(self):
+        pass
+
+    def comm_pr_try_done(self,pr_arg):
         if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.isAlive():
             self.delayed_call_pr_thread.cancel()
-        self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(TRY_DONE_NOTICE,))
+        self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(pr_arg,))
         self.delayed_call_pr_thread.start()
 
     def hook4(self):
@@ -130,7 +134,6 @@ class FulltaskSceneHandler(object):
         self.ball_guard()
 
     def hook5(self):
-        self.call_pr(CAN_PASS_COMMAND)
         self.ball_guard()
 
     def do_try(self):
@@ -163,14 +166,18 @@ class FulltaskSceneHandler(object):
 
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
-            # self.delayed_slider_thread = threading.Timer(1.0, self.ball_guard)
-            # self.delayed_slider_thread.start()
+            self.delayed_slider_thread = threading.Timer(2.0, self.ball_guard)
+            self.delayed_slider_thread.start()
 
     def latch_io(self, output=0):
         self.io_pub_latch.publish(output)
 
     def slider_io(self, output=0):
         self.io_pub_slider.publish(output)
+
+    def unlock_ball(self):
+        if robot_type == ROBOT_TR2:
+            self.slider_io(1) # down
 
     def ball_guard(self):
         if robot_type == ROBOT_TR1:

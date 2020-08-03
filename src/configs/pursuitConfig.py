@@ -5,10 +5,10 @@ from m2_move_base.msg import *
 from .fieldConfig import *
 from .commConfig import *
 
-MAX_SPEED = 4.5
+MAX_SPEED = 5.0
 
 POINT_S = (0.5, 9.5)
-POINT_C = (1.1, 1.1)
+POINT_C = (0.8, 1.02)
 POINT_D = (1.1, 3.5)
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
@@ -31,18 +31,20 @@ CHK_PTS = [
     # scene 1
     {
         'curve': "cubic",
-        'f_path': [ POINT_C,(2.28189,2.8974),(3.85596,3.98624),POINT_1 ], 
+        'f_path': [ POINT_D,(2.89165,3.77514),(4.30239,3.87097),POINT_1 ], 
         'f_stop': POINT_1,
-        'b_path': [ POINT_1,(3.85596,3.98624),(2.28189,2.8974),POINT_C ],
-        'b_stop': POINT_C,
+        'b_path': [ POINT_1,(4.30239,3.87097),(2.89165,3.77514),POINT_D ],
+        'b_stop': POINT_D,
     },
     # scene 2
     {
         'curve': "cubic",
         'f_path': [ POINT_C,(2.32721,2.85522),(4.03223,4.21992),POINT_2 ], 
         'f_stop': POINT_2,
-        'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ],
-        'b_stop': POINT_C,
+        # 'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ],
+        # 'b_stop': POINT_C,
+        'b_path': [ POINT_2,(4.66508,4.29096),(2.89165,3.77514),POINT_D ],
+        'b_stop': POINT_D,
     },
     # scene 3
     {
@@ -55,10 +57,11 @@ CHK_PTS = [
     # scene 4
     {
         'curve': "cubic",
-        'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], 
+        # 'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], 
+        'f_path': [ POINT_D,(2.3880,5.75416),(4.00042,6.86198),(5.17163,7.09371),POINT_4 ],
         'f_stop': POINT_4,
-        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.388,5.75416),POINT_D ],
-        'b_stop': POINT_C,
+        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.3880,5.75416),POINT_D ],
+        'b_stop': POINT_D,
     },
     # scene 5
     {
@@ -66,7 +69,7 @@ CHK_PTS = [
         'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], 
         'f_stop': POINT_5,
         'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ],
-        'b_stop': POINT_C,
+        'b_stop': POINT_D,
     },
     # scene 6
     {
@@ -84,11 +87,11 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     raw_pts = []
     point_density = 1000
 
-    velocity_z_kP = 5.0
-    velocity_z_kI = 0.01
-    velocity_z_ilimit = 1.0
+    velocity_z_kP = 3.0
+    velocity_z_kI = 1.0
+    velocity_z_ilimit = 1.5
     velocity_z_max = 3.0
-    target_z = -pi/2
+    target_z = -pi/2-0.3
 
     lookahead_distance = 0.0
     vector_policy = PurePursuitData.CURVATURE_DEPENDENT_TWIST_WITH_TANGENTIAL_PID
@@ -269,11 +272,11 @@ cfg['scene5_b'] = PurePursuitConfig(CHK_PTS[5]['curve'], CHK_PTS[5]['b_path'])
 # cfg['scene5_b'] = PurePursuitConfig(CHK_PTS[6]['curve'], CHK_PTS[6]['b_path'])
 
 # cfg['scene0_bs'] = PurePidConfig(CHK_PTS[0]['b_stop'], -pi/2)
-cfg['scene1_bs'] = PurePidConfig(CHK_PTS[1]['b_stop'], -pi/2)
-cfg['scene2_bs'] = PurePidConfig(CHK_PTS[2]['b_stop'], -pi/2)
+cfg['scene1_bs'] = PurePidConfig(CHK_PTS[1]['b_stop'], -2.10)
+cfg['scene2_bs'] = PurePidConfig(CHK_PTS[2]['b_stop'], -2.10)
 cfg['scene3_bs'] = PurePidConfig(CHK_PTS[3]['b_stop'], -pi/2)
-cfg['scene4_bs'] = PurePidConfig(POINT_D, -2.10)
-cfg['scene5_bs'] = PurePidConfig(POINT_D, -2.10)
+cfg['scene4_bs'] = PurePidConfig(CHK_PTS[4]['b_stop'], -2.10)
+cfg['scene5_bs'] = PurePidConfig(CHK_PTS[4]['b_stop'], -2.10)
 # cfg['scene6_bs'] = PurePidConfig(CHK_PTS[6]['b_stop'], -pi/2)
 
 cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
@@ -298,13 +301,13 @@ try0_param = [  {'hook_func' : [{'call_pr':[START_COMMAND]}],
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before receiving pos",},
                 None, None,
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
 try1_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene1_f',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'radius':2.0, 'stop_min_speed':0.75,
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
                  'trig_name' : "try_trig",
                  'log_msg'   : "start running for Try Spot 1",},
@@ -316,7 +319,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'hook2':None},{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 1",},
-                {'hook_func' : [{'hook3':None}],
+                {'hook_func' : [{'hook3':None},{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene1_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -327,7 +330,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : "default_trig",
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -345,7 +348,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'hook2':None},{"do_try":None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 2",},
-                {'hook_func' : [{'hook3':None}],
+                {'hook_func' : [{'hook3':None},{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene2_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -356,7 +359,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : "default_trig",
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -374,7 +377,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'hook2':None},{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 3",},
-                {'hook_func' : [{'hook3':None}],
+                {'hook_func' : [{'hook3':None},{'comm_pr_try_done':[CAN_CLIP_DIRECT]}],
                  'cfg_name'  : 'scene3_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -385,7 +388,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : "default_trig",
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -403,7 +406,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'hook2':None},{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 4",},
-                {'hook_func' : [{'hook3':None}],
+                {'hook_func' : [{'hook3':None},{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene4_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -414,7 +417,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : "default_trig",
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -432,7 +435,7 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'hook2':None},{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 5",},
-                {'hook_func' : [{'hook3':None}],
+                {'hook_func' : [{'hook3':None},{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene5_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -443,7 +446,7 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : "default_trig",
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -472,7 +475,7 @@ try7_param = [  {'hook_func' : [{'hookPH':None}],
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointC",},
                 None, None, None,
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -485,7 +488,7 @@ try8_param = [  {'hook_func' : [{'hookPH':None}],
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointD",},
                 None, None, None,
-                {'hook_func' : [{'hook5':None}],
+                {'hook_func' : [{'hook5':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 

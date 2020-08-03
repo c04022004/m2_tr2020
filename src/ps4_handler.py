@@ -63,6 +63,11 @@ def update_led():
     except (rospy.ServiceException, rospy.ROSException) as e:
         rospy.logerr_throttle("/set_led call failed")
 
+def cancel_all_action():
+    tr_cancel_pub.publish(GoalID())
+    sw_cancel_pub.publish(GoalID())
+    dji_cancel_pub.publish(GoalID())
+
 def ps4_cb(ps4_data): # update ps4 data
     global direct,old_data,control_mode,motor_en
     if ps4_data.l2 and ps4_data.r2:
@@ -71,14 +76,14 @@ def ps4_cb(ps4_data): # update ps4 data
             try_call_motors(motor_en)
     elif ps4_data.l1 and not old_data.l1:
         if control_mode!= MANUAL:
-            control_mode = MANUAL
             orientation_helper.stop_z()
+        control_mode = MANUAL
         update_led()
-        tr_cancel_pub.publish(GoalID())
-        sw_cancel_pub.publish(GoalID())
-        dji_cancel_pub.publish(GoalID())
+        cancel_all_action()
     elif ps4_data.r1 and not old_data.r1:
         control_mode = SEMI_AUTO
+        cancel_all_action()
+        try_call_motors(True)
         update_led()
 
     if control_mode == MANUAL:

@@ -1,7 +1,7 @@
 <launch>
 
   <node name="wifi_client" pkg="m2_wireless_comm" type="client.py" output="screen" >
-    <param name="SERVER_IP" value="192.168.1.4" />
+    <param name="SERVER_IP" value="192.168.1.6" />
     <param name="TCP_PORT" type="int" value="10305" />
     
     <rosparam param="topic_list">[] </rosparam>
