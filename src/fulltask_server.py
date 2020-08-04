@@ -52,6 +52,13 @@ class FulltaskSceneHandler(object):
             exit(1)
 
         self.command_pr_srv = rospy.ServiceProxy('request_partner_info', Request)
+        if robot_type in [ROBOT_TR1,ROBOT_TR2]:
+            try:
+                self.command_pr_srv.wait_for_service(timeout=0.5)
+            except rospy.ROSException:
+                rospy.logerr("No wireless_comm service avalible!")
+
+
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
@@ -179,17 +186,18 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_NONE:
             rospy.logwarn("If you are not using fake_robot, go check your code!")
             rospy.logwarn("Default to a 1.5 second sleep when ROBOT_NONE is set!")
-            # self.path_finish_event.wait(1.5)
-            time.sleep(1.5)
+            self.try_event.clear()
+            self.try_event.wait(1.5)
             self.as_check_preempted()
             return
         elif robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
-            self.path_finish_event.wait(0.75)
+            self.try_event.clear()
+            self.try_event.wait(0.8)
             if self.as_check_preempted(): return
             if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
                 self.delayed_lifter_thread.cancel()
-            self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
+            self.delayed_lifter_thread = threading.Timer(0.2, self.ball_guard)
             self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
@@ -220,8 +228,12 @@ class FulltaskSceneHandler(object):
 
     def call_pr(self, command):
         rospy.loginfo("CALL PR: {}".format(command))
-        if robot_type in [ROBOT_TR1,ROBOT_TR2]:
+        try:
             self.command_pr_srv(command)
+        except rospy.ServiceException as e:
+            pass
+            # rospy.logerr(e)
+            # rospy.logerr("wireless_comm service unavailable!")
 
     def process_hooks(self, hook_list):
         if hook_list == None:
@@ -231,10 +243,14 @@ class FulltaskSceneHandler(object):
                 rospy.logdebug("Processing hook self.%s"%hook)
                 try:
                     method = getattr(self, hook)
-                    if arg != None:
-                        method(*arg)
-                    else:
-                        method()
+                    try:
+                        if arg != None:
+                            method(*arg)
+                        else:
+                            method()
+                    except Exception as e:
+                        rospy.logerr(e)
+                        rospy.logerr("Error processing hook self.%s"%hook)
                 except AttributeError as e:
                     rospy.logerr(e)
                     rospy.logerr("Class %s does not implement %s"%(self.__class__.__name__,hook))
