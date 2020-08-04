@@ -66,7 +66,8 @@ def update_led():
 def cancel_all_action():
     tr_cancel_pub.publish(GoalID())
     sw_cancel_pub.publish(GoalID())
-    dji_cancel_pub.publish(GoalID())
+    if robot_type == ROBOT_TR2:
+        dji_cancel_pub.publish(GoalID())
 
 def ps4_cb(ps4_data): # update ps4 data
     global direct,old_data,control_mode,motor_en
@@ -147,10 +148,6 @@ def ps4_cb(ps4_data): # update ps4 data
                 dji_try_pub.publish(goal)
 
     elif control_mode == SEMI_AUTO:
-        if ps4_data.share and not old_data.share: # scene0/go wait 1st ball
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 0
-            fulltask_pub.publish(goal)
         if ps4_data.options and not old_data.options: # tryspot1
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 1
@@ -205,6 +202,8 @@ def ps4_cb(ps4_data): # update ps4 data
 
 def try_call_motors(set_bool):
     global motor_srvs
+    if robot_type not in [ROBOT_TR1, ROBOT_TR2]:
+        return
     for i in range(4):
         try:
             rospy.wait_for_service('/motor_base_%d/set_enable_state'%i, timeout=0.1)

@@ -6,10 +6,12 @@ from std_msgs.msg import Bool
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import *
 from visualization_msgs.msg import Marker
-from math import pi
-from m2_tr2020.msg import *
-import time
 from actionlib_msgs.msg import GoalStatus
+from m2_tr2020.msg import *
+
+import time
+import numpy as np
+from numpy import pi
 from configs.pursuitConfig import *
 from configs.fieldConfig import *
 from configs.commConfig import *
@@ -24,10 +26,12 @@ class FulltaskSceneHandler(object):
         self.move_base_client = actionlib.SimpleActionClient('Switch', SwitchModeAction)
         self.move_base_client.wait_for_server()
 
+        self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
+        if robot_type == ROBOT_TR2:
+            self.dji_client.wait_for_server()
+
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
-        self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
-        self.dji_client.wait_for_server()
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
         self.delayed_call_pr_thread = None
@@ -55,12 +59,48 @@ class FulltaskSceneHandler(object):
         # The reverse action should be evemt.clear()
         return (True, "event set")
     
-    def gen_intermediate_func(self, x_min=0.0, x_max=0.0, y_min=0.0, y_max=0.0, thres=0.99):
+    def gen_intermediate_func(self, x_min, x_max, y_min, y_max, eta, thres):
         def intermediate_func(msg):
-            pose = msg.cur_pos.pose.pose
-            if pose.position.x >= x_min and pose.position.x <= x_max and\
-                pose.position.y >= y_min and pose.position.y <= y_max:
-                self.path_finish_event.set()
+            pose = msg.cur_odom.pose.pose.position
+            # Breaking out due to pose
+            if x_min!=None and x_max!= None and y_min!=None and y_max!=None:
+                if pose.x >= x_min and pose.x <= x_max and pose.y >= y_min and pose.y <= y_max:
+                    self.path_finish_event.set()
+            # elif x_min!=None and x_max!= None:
+            #     if pose.x >= x_min and pose.x <= x_max:
+            #         self.path_finish_event.set()
+            # elif y_min!=None and y_max!= None:
+            #     if pose.y >= y_min and pose.y <= y_max:
+            #         self.path_finish_event.set()
+            # Breaking out due to eta remaining
+            if eta!=None:
+                twist_lin = msg.cur_odom.twist.twist.linear
+                twist_mag = np.hypot(twist_lin.x,twist_lin.y)
+                prev_twist_lin = msg.prev_odom.twist.twist.linear
+                prev_twist_mag = np.hypot(prev_twist_lin.x,prev_twist_lin.y)
+                dt = msg.cur_odom.header.stamp.to_sec()-msg.prev_odom.header.stamp.to_sec()
+                acc = np.nan_to_num((twist_mag-prev_twist_mag)/dt)
+                dist = np.hypot(eta['dest_x']-pose.x,eta['dest_y']-pose.y)
+                prev_pose = msg.prev_odom.pose.pose.position
+                prev_dist = np.hypot(eta['dest_x']-prev_pose.x,eta['dest_y']-prev_pose.y)
+                # coeff = [-dist, 0.5*acc, twist_mag] # s = ut + 0.5at**2
+                # roots = np.roots(coeff)
+                # t = roots[roots>=0].min()
+                
+                # do simulation, using only PD control
+                _dist = dist
+                _prev_dist = dist
+                for i in range(int(eta['time']*100)):
+                    cmd_vel = _dist*eta['kP'] + (_dist-_prev_dist)*eta['kD']
+                    cmd_vel = min(cmd_vel,eta['vel'])
+                    _prev_dist = _dist
+                    _dist -= cmd_vel*0.01
+                    # rospy.loginfo("dist: %.4f"%_dist)
+                    if _dist < eta['dz']:
+                        # rospy.loginfo("event trigger when eta=%.4f"%(i/100.0))
+                        self.path_finish_event.set()
+                        break
+            # Breaking out due to eta progress
             if (msg.progress > thres):
                 self.path_finish_event.set() # python threading event
         return intermediate_func
@@ -69,7 +109,8 @@ class FulltaskSceneHandler(object):
         rospy.logwarn("shutdown request received")
         if self._as.is_active():
             self.move_base_client.cancel_all_goals()
-            self.dji_client.cancel_all_goals()
+            if robot_type == ROBOT_TR2:
+                self.dji_client.cancel_all_goals()
             self._as.set_preempted()
         self.path_finish_event.set()
 
@@ -88,7 +129,8 @@ class FulltaskSceneHandler(object):
         rospy.logwarn("fulltask goal preempt request")
         if self._as.is_active():
             self.move_base_client.cancel_all_goals()
-            self.dji_client.cancel_all_goals()
+            if robot_type == ROBOT_TR2:
+                self.dji_client.cancel_all_goals()
             self._as.set_preempted()
         self.path_finish_event.set()
 
@@ -99,10 +141,7 @@ class FulltaskSceneHandler(object):
             rospy.logwarn("_as.is_preempt_requested: %d"%(self._as.is_preempt_requested()))
             return True
         return False
-    
-    def hookPH(self):
-        pass # Just a placeholder here
-    
+
     def hook0(self):
         self.ball_guard()
 
@@ -111,7 +150,7 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
-            self.delayed_slider_thread = threading.Timer(0.75, self.unlock_ball)
+            self.delayed_slider_thread = threading.Timer(0.5, self.unlock_ball)
             self.delayed_slider_thread.start()
 
     def hook2(self):
@@ -157,7 +196,7 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal_and_wait(TryGoal(scene_id=3))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
             self.try_event.clear()
-            self.try_event.wait(0.5)
+            self.try_event.wait(0.4)
 
             self.dji_client.send_goal(TryGoal(scene_id=4))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
@@ -169,30 +208,27 @@ class FulltaskSceneHandler(object):
             self.delayed_slider_thread = threading.Timer(2.0, self.ball_guard)
             self.delayed_slider_thread.start()
 
-    def latch_io(self, output=0):
-        self.io_pub_latch.publish(output)
-
-    def slider_io(self, output=0):
-        self.io_pub_slider.publish(output)
-
     def unlock_ball(self):
         if robot_type == ROBOT_TR2:
-            self.slider_io(1) # down
+            self.io_pub_slider.publish(1) # up
 
     def ball_guard(self):
         if robot_type == ROBOT_TR1:
-            self.latch_io(0) # retract
+            self.io_pub_latch.publish(0) # retract
         elif robot_type == ROBOT_TR2:
-            self.slider_io(0) # down
+            self.io_pub_slider.publish(0) # down
 
     def call_pr(self, command):
-        print("CALLL PR: {}".format(command))
-        self.command_pr_srv(command)
+        rospy.loginfo("CALL PR: {}".format(command))
+        if robot_type in [ROBOT_TR1,ROBOT_TR2]:
+            self.command_pr_srv(command)
 
     def process_hooks(self, hook_list):
+        if hook_list == None:
+            return
         for hook_dict in hook_list:
             for hook, arg in hook_dict.items():
-                rospy.loginfo("Processing hook self.%s"%hook)
+                rospy.logdebug("Processing hook self.%s"%hook)
                 try:
                     method = getattr(self, hook)
                     if arg != None:
