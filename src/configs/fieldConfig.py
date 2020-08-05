@@ -19,7 +19,7 @@ def phrase_color_from_launch():
         rospy.loginfo("%s started with MATCH_BLUE"%rospy.get_name())
         return MATCH_BLUE
     else:
-        rospy.logwarn("No valid color specified, aborting")
+        rospy.logerr("No valid color specified, aborting")
         return MATCH_NONE
 
 def phrase_team_from_launch():

@@ -73,12 +73,12 @@ class FulltaskSceneHandler(object):
             if x_min!=None and x_max!= None and y_min!=None and y_max!=None:
                 if pose.x >= x_min and pose.x <= x_max and pose.y >= y_min and pose.y <= y_max:
                     self.path_finish_event.set()
-            # elif x_min!=None and x_max!= None:
-            #     if pose.x >= x_min and pose.x <= x_max:
-            #         self.path_finish_event.set()
-            # elif y_min!=None and y_max!= None:
-            #     if pose.y >= y_min and pose.y <= y_max:
-            #         self.path_finish_event.set()
+            elif x_min!=None and x_max!= None:
+                if pose.x >= x_min and pose.x <= x_max:
+                    self.path_finish_event.set()
+            elif y_min!=None and y_max!= None:
+                if pose.y >= y_min and pose.y <= y_max:
+                    self.path_finish_event.set()
             # Breaking out due to eta remaining
             if eta!=None:
                 twist_lin = msg.cur_odom.twist.twist.linear
@@ -180,7 +180,7 @@ class FulltaskSceneHandler(object):
         self.ball_guard()
 
     def hook5(self):
-        self.ball_guard()
+        pass
 
     def do_try(self):
         if robot_type == ROBOT_NONE:
@@ -231,8 +231,7 @@ class FulltaskSceneHandler(object):
         try:
             self.command_pr_srv(command)
         except rospy.ServiceException as e:
-            pass
-            # rospy.logerr(e)
+            rospy.logerr(e)
             # rospy.logerr("wireless_comm service unavailable!")
 
     def process_hooks(self, hook_list):
@@ -292,24 +291,10 @@ class FulltaskSceneHandler(object):
 
     def execute_cb(self, goal):
         # print(goal)
-        if (goal.scene_id == 0):
-            self.scene_func(0, try0_param)
-        if (goal.scene_id == 1):
-            self.scene_func(1, try1_param)
-        if (goal.scene_id == 2):
-            self.scene_func(2, try2_param)
-        if (goal.scene_id == 3):
-            self.scene_func(3, try3_param)
-        if (goal.scene_id == 4):
-            self.scene_func(4, try4_param)
-        if (goal.scene_id == 5):
-            self.scene_func(5, try5_param)
-        if (goal.scene_id == 6):
-            self.scene_func(6, try6_param)
-        if (goal.scene_id == 7):
-            self.scene_func(7, try7_param)
-        if (goal.scene_id == 8):
-            self.scene_func(8, try8_param)
+        if goal.scene_id in range(9):
+            id = goal.scene_id
+            param = globals()['try%d_param'%id]
+            self.scene_func(id, param)
         if (goal.scene_id == 9):
             self.sample_scene()
 
@@ -317,6 +302,8 @@ if __name__ == "__main__":
     rospy.init_node('tr_server')
     match_color = phrase_color_from_launch()
     robot_type = phrase_team_from_launch()
+    if match_color == None:
+        exit(1)
     for c in cfg.values():
         c.setFieldColor(match_color)
     fulltask_server = FulltaskSceneHandler()

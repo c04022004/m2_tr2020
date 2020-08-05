@@ -236,5 +236,8 @@ orientation_helper = chassis_control.RotationCompesation()
 match_color = phrase_color_from_launch()
 robot_type = phrase_team_from_launch()
 
+if match_color == None:
+    exit(1)
+
 rospy.spin()
 

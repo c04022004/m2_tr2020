@@ -3,7 +3,6 @@
     <arg name = "team"/>
     <arg name = "color"/>
 
-
     <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
         <arg name = "joy" value="$(arg joy)"/>
         <arg name = "joy_deadzone" value="0.02"/>
@@ -33,11 +32,13 @@
         <param name="color" type="str" value="$(arg color)" />
     </node>
 
+    <!-- Only launching this node when team is rtx(TR2) -->
     <node name = "dji_try_server" 
         pkg = "m2_tr2020"
         type = "dji_try_action.py"
         output = "screen"
-        respawn = "true">
+        respawn = "true"
+        if="$(eval team == 'rtx')">
     </node>
 
 </launch>
