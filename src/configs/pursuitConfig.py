@@ -195,7 +195,7 @@ class PurePidConfig: # Default setting of MATCH_RED
 
         pure_pid_data.deadzone_x = 0.02
         pure_pid_data.deadzone_y = 0.02
-        pure_pid_data.deadzone_z = 0.0
+        pure_pid_data.deadzone_z = 0.017 # 1deg
 
         pure_pid_data.proportional_on_error = PonE
 

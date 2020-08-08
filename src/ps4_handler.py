@@ -61,7 +61,7 @@ def update_led():
     try:
         ps4_led_srv(rgb_req)
     except (rospy.ServiceException, rospy.ROSException) as e:
-        rospy.logerr_throttle("/set_led call failed")
+        rospy.logerr_throttle(1,"/set_led call failed")
 
 def cancel_all_action():
     tr_cancel_pub.publish(GoalID())
