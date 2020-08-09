@@ -240,7 +240,8 @@ for i in range(7):
         cfg['scene%d_bs'%i] = PurePidConfig(CHK_PTS[i]['b_path'][-1], -2.10 if CHK_PTS[i]['b_path'][-1] == POINT_D else -pi/2)
     
 for i in range(1,6):
-    cfg['scene%d_f'%i].target_z -= 0.1 # slightly slanted orientation
+    cfg['scene%d_f'%i].target_z -= 0.25 # slightly slanted orientation
+    # Meeting significant motor limit here, must use all 4 motors (and less air resistance)
 
 cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
 cfg['pointD_s'] = PurePidConfig(POINT_D, -2.10)
@@ -343,8 +344,8 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
 
 try3_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene3_f',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.05},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 3",},
                 {'hook_func' : [{'hook1':None}],

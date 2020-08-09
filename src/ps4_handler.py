@@ -114,7 +114,7 @@ def ps4_cb(ps4_data): # update ps4 data
             twist.linear.x = twist.linear.x/vel_magnitude*max_linear_speed
             twist.linear.y = twist.linear.y/vel_magnitude*max_linear_speed
         fix_theta_vel = orientation_helper.compensate(twist)
-        local_vel = kmt_helper.kmt_local2world(fix_theta_vel)
+        local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
         global direct
         direct = ChannelTwist()

@@ -27,15 +27,15 @@ class FrameTranslation(object):
 
     def kmt_world2local(self,twist_msg):
         new_msg = Twist()
-        new_msg.linear.x = twist_msg.linear.x * np.cos(self.orientation) - twist_msg.linear.y * np.sin(self.orientation)
-        new_msg.linear.y = twist_msg.linear.y * np.cos(self.orientation) + twist_msg.linear.x * np.sin(self.orientation)
+        new_msg.linear.x = twist_msg.linear.x * np.cos(self.orientation) + twist_msg.linear.y * np.sin(self.orientation)
+        new_msg.linear.y = twist_msg.linear.y * np.cos(self.orientation) - twist_msg.linear.x * np.sin(self.orientation)
         new_msg.angular.z = twist_msg.angular.z
         return new_msg
 
     def kmt_local2world(self,twist_msg):
         new_msg = Twist()
-        new_msg.linear.x = twist_msg.linear.x * cos(self.orientation) + twist_msg.linear.y * sin(self.orientation)
-        new_msg.linear.y = twist_msg.linear.y * cos(self.orientation) - twist_msg.linear.x * sin(self.orientation)
+        new_msg.linear.x = twist_msg.linear.x * cos(self.orientation) - twist_msg.linear.y * sin(self.orientation)
+        new_msg.linear.y = twist_msg.linear.y * cos(self.orientation) + twist_msg.linear.x * sin(self.orientation)
         new_msg.angular.z = twist_msg.angular.z
         return new_msg
 

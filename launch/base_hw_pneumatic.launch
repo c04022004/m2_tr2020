@@ -100,6 +100,7 @@
 
 	<!-- Convert cmd_vel to motor v_setpoint -->
 	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">
+		<arg name="max_angular_velocity" default="$(eval 50)" />
 		<arg name="chassis_config" value="$(find m2_tr2020)/launch/owheel_epos4.yaml" />
 	</include>
 
