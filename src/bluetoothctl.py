@@ -186,7 +186,7 @@ if __name__ == "__main__":
     
     print("Start scanning and wait for device. . ."),
     bl.start_scan()
-    for i in range(0, 5):
+    for i in range(0, 2):
         print("."),
         sys.stdout.flush()
         time.sleep(1)
@@ -206,7 +206,7 @@ if __name__ == "__main__":
             pass
     print("")
     
-    print("Connecting."),
+    print("Connecting. . ."),
     while True:
         try:
             print("."),

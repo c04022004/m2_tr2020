@@ -14,7 +14,7 @@ import chassis_control
 
 direct = ChannelTwist()
 direct.channel = ChannelTwist.CONTROLLER
-max_linear_speed = 1.5
+max_linear_speed = 4.5
 max_rotational_speed = 1.2
 
 old_data = Ps4Data()
@@ -116,12 +116,16 @@ def ps4_cb(ps4_data): # update ps4 data
         fix_theta_vel = orientation_helper.compensate(twist)
         local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
-        global direct
-        direct = ChannelTwist()
-        direct.channel = ChannelTwist.CONTROLLER
-        direct.linear = local_vel.linear
-        direct.angular = local_vel.angular
-        vel_pub.publish(direct)
+        if ps4_data.l1:
+            abs_pub.publish(True)
+        else:
+            abs_pub.publish(False)
+            global direct
+            direct = ChannelTwist()
+            direct.channel = ChannelTwist.CONTROLLER
+            direct.linear = local_vel.linear
+            direct.angular = local_vel.angular
+            vel_pub.publish(direct)
 
         # Change ds4 button layout according to robot
         if robot_type == ROBOT_TR1:
@@ -224,6 +228,8 @@ io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1)
 # tr2/djimotor
 io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1)
 dji_try_pub = rospy.Publisher('/dji_try_server/goal', TryActionGoal, queue_size=1)
+
+abs_pub = rospy.Publisher('/abs/break', Bool, queue_size=1)
 
 motor_srvs = [None for i in range(4)]
 for i in range(4):
