@@ -10,7 +10,8 @@ MAX_SPEED = 4.5
 POINT_S = (0.5, 9.5)
 POINT_0 = (0.8, 0.48)
 POINT_C = (0.8, 1.02)
-POINT_D = (1.1, 3.5)
+POINT_D = (1.1, 3.5) # z=-2.3
+POINT_E = (0.6, 4.95) # z=-2.1
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
 tryx_offset = 0.05 # reserve for overshoot
@@ -30,34 +31,44 @@ CHK_PTS = [
     # scene 1
     {
         'curve': "cubic",
-        'f_path': [ POINT_D,(2.89165,3.77514),(4.30239,3.87097),POINT_1 ], 
-        'b_path': [ POINT_1,(4.30239,3.87097),(2.89165,3.77514),POINT_D ],
+        'f_path': [ POINT_D,(3.34892,3.71807),POINT_1 ], 
+        # 'b_path': [ POINT_1,(4.30239,3.87097),(2.89165,3.77514),POINT_D ], # TS2 -> POINT_D, via TZ2
+        'b_path': [ POINT_1,(3.53595,4.60383),POINT_E ], # TS2 -> POINT_E, via TZ2
     },
     # scene 2
     {
         'curve': "cubic",
-        'f_path': [ POINT_C,(2.32721,2.85522),(4.03223,4.21992),POINT_2 ], 
-        # 'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ],
-        'b_path': [ POINT_2,(4.66508,4.29096),(2.89165,3.77514),POINT_D ],
+        # 'f_path': [ POINT_C,(2.32721,2.85522),(4.03223,4.21992),POINT_2 ], # POINT_C -> POINT_2, via TZ2
+        # 'f_path': [ POINT_D,(2.89165,3.77514),(4.66508,4.29096),POINT_2 ], # POINT_D -> POINT_2, via TZ2
+        'f_path': [ POINT_D,(3.34892,3.71807),POINT_2 ], # POINT_D -> POINT_2, via TZ2
+        # 'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ], # TS2 -> POINT_C, via TZ2
+        # 'b_path': [ POINT_2,(4.66508,4.29096),(2.89165,3.77514),POINT_D ], # TS2 -> POINT_D, via TZ2
+        'b_path': [ POINT_2,(3.34892,3.71807),POINT_D ], # TS2 -> POINT_D, via TZ2
+        # 'b_path': [ POINT_2,(3.35334,4.9082),POINT_E ], # TS2 -> POINT_E, via TZ1
     },
     # scene 3
     {
         'curve': "cubic",
         'f_path': [ POINT_C,(3.1, 3.57), POINT_3 ], 
-        'b_path': [ POINT_3,(3.1, 3.57), POINT_C ],
+        # 'b_path': [ POINT_3,(3.1, 3.57), POINT_C ], # TS3 -> POINT_C, via TZ2
+        'b_path': [ POINT_3,(3.74106,4.17264), POINT_D], # TS3 -> POINT_D, via TZ2
     },
     # scene 4
     {
         'curve': "cubic",
-        'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], 
-        # 'f_path': [ POINT_D,(2.3880,5.75416),(4.00042,6.86198),(5.17163,7.09371),POINT_4 ],
-        'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.3880,5.75416),POINT_D ],
+        # 'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], # POINT_C -> TS4, via TZ2
+        # 'f_path': [ POINT_D,(2.3880,5.75416),(4.00042,6.86198),(5.17163,7.09371),POINT_4 ], # POINT_D -> TS4, via TZ1
+        'f_path': [ POINT_E,(3.33397,6.47919),POINT_4 ], # POINT_E -> TS4, via TZ1
+        # 'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.3880,5.75416),POINT_D ],
+        'b_path': [ POINT_4,(3.33397,6.47919),POINT_E ], # TS4 -> POINT_E, via TZ1
     },
     # scene 5
     {
         'curve': "cubic",
-        'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], 
-        'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ],
+        # 'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], # POINT_D -> TS5, via TZ1
+        'f_path': [ POINT_E,(3.33397,6.47919),POINT_5 ], # POINT_E -> TS5, via TZ1
+        # 'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ], # TS5 -> POINT_E, via TZ1
+        'b_path': [ POINT_5,(3.33397,6.47919),POINT_E ], # TS5 -> POINT_E, via TZ1
     },
     # scene 6
     {
@@ -321,7 +332,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "start running for Try Spot 2",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene2_fs',
-                 'cfg_param' : {'speed':2.1, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':2.75, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : 'ts2_trig',
                  'log_msg'   : "breaking stage before Try Spot 2",},
                 {'hook_func' : [{"do_try":None}],
@@ -358,7 +369,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "do_try for Try Spot 3",},
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_DIRECT]}],
                  'cfg_name'  : 'scene3_b',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},

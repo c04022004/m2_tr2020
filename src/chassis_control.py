@@ -65,6 +65,9 @@ class RotationCompesation(object):
     def stop_z(self):
         self.target = self.orientation
 
+    def set_z(self, z_target):
+        self.target = normalize_angle(z_target)
+
     def compensate(self, twist_msg):
         self.target += twist_msg.angular.z * 0.01 # dt assuming 100Hz
         self.target = normalize_angle(self.target)

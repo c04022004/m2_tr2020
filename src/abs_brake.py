@@ -22,31 +22,27 @@ coeff = 0.4
 def brake_cb(msg):
     global is_braking
     if msg.data and not is_braking:
-        orientation_helper.stop_z()
+        rospy.loginfo("Start braking...")
+        # orientation_helper.stop_z()
+        orientation_helper.set_z(-np.pi/2)
     is_braking = msg.data
 
 def odom_cb(odom_msg):
-    elif is_braking:
-
     if is_braking:
         twist = Twist()
-        twist.linear.x  = odom_msg.twist.twist.linear.x*coeff
-        twist.linear.y  = odom_msg.twist.twist.linear.y*coeff
-        twist.angular.z = odom_msg.twist.twist.angular.z*coeff*0.1
+        if np.hypot(twist.linear.x,twist.linear.y) > 0.75: # else zero vel
+            twist.linear.x  = odom_msg.twist.twist.linear.x*coeff
+            twist.linear.y  = odom_msg.twist.twist.linear.y*coeff
+            twist.angular.z = odom_msg.twist.twist.angular.z*coeff*0.1
 
         fix_theta_vel = orientation_helper.compensate(twist)
         local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
         direct = ChannelTwist()
         direct.channel = ChannelTwist.EMERGENCY
-        if np.hypot(twist.linear.x,twist.linear.y) > 0.75:
-            direct.linear = local_vel.linear
-            direct.angular = local_vel.angular
+        direct.linear = local_vel.linear
+        direct.angular = local_vel.angular
         vel_pub.publish(direct)
-
-        # direct = ChannelTwist()
-        # direct.channel = ChannelTwist.EMERGENCY
-        # vel_pub.publish(direct)
 
 def try_call_motors(set_bool):
     global motor_srvs
@@ -63,7 +59,7 @@ rospy.loginfo("abs_braking mode: exponential decay %.2f"%coeff)
 abs_sub = rospy.Subscriber('/abs/break', Bool, brake_cb)
 
 kmt_helper = chassis_control.FrameTranslation()
-orientation_helper = chassis_control.RotationCompesation()
+orientation_helper = chassis_control.RotationCompesation(max_z_vel=3.0, kFF=0.0, kP=6.0)
 vel_pub = rospy.Publisher('/chan_cmd_vel', ChannelTwist, queue_size = 1)
 
 motor_srvs = [None for i in range(4)]

@@ -18,7 +18,10 @@ class Bluetoothctl:
     """A wrapper for bluetoothctl utility."""
 
     def __init__(self):
-        out = subprocess.check_output("rfkill unblock bluetooth", shell = True)
+        try:
+            out = subprocess.check_output("rfkill unblock bluetooth", shell = True)
+        except Exception as e:
+            print("rfkill error: %s"%e)
         self.child = pexpect.spawn("bluetoothctl", echo = False)
 
     def get_output(self, command, pause = 0):
