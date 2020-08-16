@@ -8,9 +8,6 @@ from m2_chassis_utils.msg import ChannelTwist
 import numpy as np
 import chassis_control
 
-# direct = ChannelTwist()
-# direct.channel = ChannelTwist.EMERGENCY
-
 # Motor enable state
 prev_braking = False
 is_braking = False
@@ -23,8 +20,8 @@ def brake_cb(msg):
     global is_braking
     if msg.data and not is_braking:
         rospy.loginfo("Start braking...")
-        # orientation_helper.stop_z()
-        orientation_helper.set_z(-np.pi/2)
+        orientation_helper.stop_z()
+        # orientation_helper.set_z(-np.pi/2)
     is_braking = msg.data
 
 def odom_cb(odom_msg):
@@ -69,6 +66,10 @@ for i in range(4):
 odom_sub = rospy.Subscriber("chassis_odom",Odometry, odom_cb)
 
 rospy.spin()
+
+# Real Anti-lock Braking is not possible:
+# Epos4 only allow locking when the not moving
+# The fastest enable call needs 0.1s to complete
 # rate = rospy.Rate(10)
 # while not rospy.is_shutdown():
 #     if is_braking:

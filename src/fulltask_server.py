@@ -32,6 +32,7 @@ class FulltaskSceneHandler(object):
 
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
+        self.io_sub_slider = rospy.Subscriber('io_board1/io_3/get_state', Bool, self.slider_cb)
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
         self.delayed_call_pr_thread = None
@@ -201,6 +202,13 @@ class FulltaskSceneHandler(object):
             self.delayed_lifter_thread.start()
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
+            slider_retry_count = 0
+            while self.slider_pos != True:
+                self.try_event.wait(0.1)
+                slider_retry_count += 1
+                if slider_retry_count > 10:
+                    rospy.logerr_throttle(1, "Slider not pressing against limit switch!!")
+                if self.as_check_preempted(): return
             self.dji_client.send_goal_and_wait(TryGoal(scene_id=3))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
             self.try_event.clear()
@@ -208,8 +216,6 @@ class FulltaskSceneHandler(object):
 
             self.dji_client.send_goal(TryGoal(scene_id=4))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
-            # self.try_event.clear()
-            # self.try_event.wait(0.7)
 
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
@@ -219,6 +225,10 @@ class FulltaskSceneHandler(object):
     def unlock_ball(self):
         if robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1) # up
+            # if self.slider_pos != True:
+
+    def slider_cb(self, msg):
+        self.slider_pos = msg.data
 
     def ball_guard(self):
         if robot_type == ROBOT_TR1:

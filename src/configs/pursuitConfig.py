@@ -8,10 +8,10 @@ from .commConfig import *
 MAX_SPEED = 4.5
 
 POINT_S = (0.5, 9.5)
-POINT_0 = (0.8, 0.48)
-POINT_C = (0.8, 1.02)
-POINT_D = (1.1, 3.5) # z=-2.3
-POINT_E = (0.6, 4.95) # z=-2.1
+POINT_0 = (0.8, 0.48)   # 1st ball pass
+POINT_C = (0.8, 1.02)   # 
+POINT_D = (1.1, 3.5)    # z=-2.3
+POINT_E = (0.6, 4.95)   # z=-2.1
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
 tryx_offset = 0.05 # reserve for overshoot
@@ -208,6 +208,10 @@ class PurePidConfig: # Default setting of MATCH_RED
         pure_pid_data.deadzone_y = 0.02
         pure_pid_data.deadzone_z = 0.017 # 1deg
 
+        pure_pid_data.accel_limit = 4.0
+        pure_pid_data.force_compensate = True
+        pure_pid_data.force_compensate_kP = 1.0
+
         pure_pid_data.proportional_on_error = PonE
 
         goal = SwitchModeGoal(target_mode=SwitchModeGoal().PURE_PID, pure_pid_data=pure_pid_data)
@@ -282,12 +286,12 @@ try0_param = [  {'hook_func' : [{'call_pr':[START_COMMAND]}],
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.5, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':1.0, 'curvature_penalty_kP':0.0},
                  'trig_name' : 'mode_trig',
                  'log_msg'   : "start running for receiving pos",},
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.4, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.42, 'kP':3.0, 'kI':0.0001, 'kD':3.0},
                  'trig_name' : 'rec_sc0_trig',
                  'log_msg'   : "breaking stage before receiving pos",},
                 None, None,
@@ -332,7 +336,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "start running for Try Spot 2",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene2_fs',
-                 'cfg_param' : {'speed':2.75, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':2.1, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : 'ts2_trig',
                  'log_msg'   : "breaking stage before Try Spot 2",},
                 {'hook_func' : [{"do_try":None}],
@@ -355,13 +359,13 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
 
 try3_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene3_f',
-                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.05},
+                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.2},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 3",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene3_fs',
-                 'cfg_param' : {'speed':2.1, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':1.0, 'kI':0.0, 'kD':3.0},
                  'trig_name' : 'ts3_trig',
                  'log_msg'   : "breaking stage before Try Spot 3",},
                 {'hook_func' : [{'do_try':None}],
