@@ -120,7 +120,7 @@ class MyTmuxApp(npyscreen.NPSAppManaged):
     def onStart(self):
         npyscreen.setTheme(npyscreen.Themes.BlackOnWhiteTheme)
         self.registerForm("MAIN", MainForm(name="Robot/Field Configuration Program v0.9"))
-        self.registerForm("FORM2", Form2(name="Page 2"))
+        self.registerForm("FORM2", Form2(name="Page 2",lines=25, columns=100, draw_line_at=16))
 class MainForm(npyscreen.ActionFormV2):
 
     CANCEL_BUTTON_BR_OFFSET = (2, -5)
@@ -212,7 +212,6 @@ class Form2(npyscreen.ActionFormV2):
         scroll_exit=True, name='Option', 
         values = ['Option1','Option2'],
         max_width=40, max_height=9)
-        #self.edit()
 
         
     def exit(self):
