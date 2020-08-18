@@ -14,7 +14,7 @@ import chassis_control
 
 direct = ChannelTwist()
 direct.channel = ChannelTwist.CONTROLLER
-max_linear_speed = 2.5
+max_linear_speed = 2.0
 max_rotational_speed = 1.5
 
 old_data = Ps4Data()

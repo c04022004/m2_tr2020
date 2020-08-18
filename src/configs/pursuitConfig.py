@@ -8,10 +8,12 @@ from .commConfig import *
 MAX_SPEED = 4.5
 
 POINT_S = (0.5, 9.5)
-POINT_0 = (0.8, 0.48)   # 1st ball pass
-POINT_C = (0.8, 1.02)   # 
-POINT_D = (1.1, 3.5)    # z=-2.3
-POINT_E = (0.6, 4.95)   # z=-2.1
+POINT_A = (0.8, 0.48)   # 1st ball pass (to TS3)
+POINT_B = (0.92, 3.2)   # 2nd ball pass (to TS2)
+POINT_C = (1.12, 3.7)   # 3rd ball pass (to TS1)
+POINT_D = (0.92, 4.5)   # 4th ball pass (to TS4)
+POINT_E = (0.92, 5.3)   # 5th ball pass (to TS5)
+
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
 tryx_offset = 0.05 # reserve for overshoot
@@ -25,55 +27,54 @@ CHK_PTS = [
     # scene 0
     {
         'curve': "cubic",
-        'f_path': [ POINT_S, POINT_0 ],
+        'f_path': [ POINT_S, POINT_A ],
         'b_path': None,
     },
     # scene 1
     {
         'curve': "cubic",
-        'f_path': [ POINT_D,(3.34892,3.71807),POINT_1 ], 
-        # 'b_path': [ POINT_1,(4.30239,3.87097),(2.89165,3.77514),POINT_D ], # TS2 -> POINT_D, via TZ2
-        'b_path': [ POINT_1,(3.53595,4.60383),POINT_E ], # TS2 -> POINT_E, via TZ2
+        # POINT_C -> TS1, via TZ2 (mostly straight)
+        'f_path': [ POINT_C,(3.33919,3.58903),POINT_1 ],
+        # TS2 -> POINT_E, via TZ2 (curved)
+        'b_path': [ POINT_1,(3.68049,4.56372),POINT_E ],
     },
     # scene 2
     {
         'curve': "cubic",
-        # 'f_path': [ POINT_C,(2.32721,2.85522),(4.03223,4.21992),POINT_2 ], # POINT_C -> POINT_2, via TZ2
-        # 'f_path': [ POINT_D,(2.89165,3.77514),(4.66508,4.29096),POINT_2 ], # POINT_D -> POINT_2, via TZ2
-        'f_path': [ POINT_D,(3.34892,3.71807),POINT_2 ], # POINT_D -> POINT_2, via TZ2
-        # 'b_path': [ POINT_2,(4.03223,4.21992),(2.32721,2.85522),POINT_C ], # TS2 -> POINT_C, via TZ2
-        # 'b_path': [ POINT_2,(4.66508,4.29096),(2.89165,3.77514),POINT_D ], # TS2 -> POINT_D, via TZ2
-        'b_path': [ POINT_2,(3.34892,3.71807),POINT_D ], # TS2 -> POINT_D, via TZ2
-        # 'b_path': [ POINT_2,(3.35334,4.9082),POINT_E ], # TS2 -> POINT_E, via TZ1
+        # POINT_B -> TS2, via TZ2 (mostly straight)
+        # (5.64966,4.43162),(3.40273,3.8522),(0.906773,3.2515)
+        'f_path': [ POINT_B,(3.31654,3.69184),POINT_2 ],
+        # TS2 -> POINT_C, via TZ2 (curved)
+        'b_path': [ POINT_2,(3.31654,3.69184),POINT_C ],
     },
     # scene 3
     {
         'curve': "cubic",
-        'f_path': [ POINT_C,(3.1, 3.57), POINT_3 ], 
-        # 'b_path': [ POINT_3,(3.1, 3.57), POINT_C ], # TS3 -> POINT_C, via TZ2
-        'b_path': [ POINT_3,(3.74106,4.17264), POINT_D], # TS3 -> POINT_D, via TZ2
+        # always the first ball (mostly straight)
+        'f_path': [ POINT_A,(3.1, 3.57), POINT_3 ],
+        # TS3 -> POINT_B, via TZ2 (slightly curved)
+        'b_path': [ POINT_3,(3.1, 3.57), POINT_B ],
     },
     # scene 4
     {
         'curve': "cubic",
-        # 'f_path': [ POINT_C,(2.65163,2.93525),(4.34558,4.87455),POINT_4 ], # POINT_C -> TS4, via TZ2
-        # 'f_path': [ POINT_D,(2.3880,5.75416),(4.00042,6.86198),(5.17163,7.09371),POINT_4 ], # POINT_D -> TS4, via TZ1
-        'f_path': [ POINT_E,(3.33397,6.47919),POINT_4 ], # POINT_E -> TS4, via TZ1
-        # 'b_path': [ POINT_4,(5.17163,7.09371),(4.00042,6.86198),(2.3880,5.75416),POINT_D ],
-        'b_path': [ POINT_4,(3.33397,6.47919),POINT_E ], # TS4 -> POINT_E, via TZ1
+        # POINT_E -> TS4, via TZ1 (mostly straight)
+        'f_path': [ POINT_E,(3.37841,6.23819),POINT_4 ],
+        # TS4 -> POINT_D, via TZ1 (curved)
+        'b_path': [ POINT_4,(3.10521,6.32539),POINT_D ],
     },
     # scene 5
     {
         'curve': "cubic",
-        # 'f_path': [ POINT_D,(2.34632,5.8606),(4.7244,7.8566),POINT_5 ], # POINT_D -> TS5, via TZ1
-        'f_path': [ POINT_E,(3.33397,6.47919),POINT_5 ], # POINT_E -> TS5, via TZ1
-        # 'b_path': [ (5.31206,8.40092),(4.7244,7.8566),(2.34632,5.8606),POINT_D ], # TS5 -> POINT_E, via TZ1
-        'b_path': [ POINT_5,(3.33397,6.47919),POINT_E ], # TS5 -> POINT_E, via TZ1
+        # POINT_D -> TS5, via TZ1 (mostly straight)
+        'f_path': [ POINT_D,(3.13137,6.26445),POINT_5 ],
+        # TS5 -> POINT_E, via TZ1 (starting position retracted)
+        'b_path': [ (POINT_5[0]-0.25,POINT_5[1]),(3.13137,6.26445),POINT_D ],
     },
     # scene 6
     {
         'curve': "cubic",
-        'f_path': [ POINT_C, POINT_S ],
+        'f_path': [ POINT_D, POINT_S ],
         'b_path': None,
     },
 ]
@@ -87,7 +88,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
     velocity_z_kP = 3.0
     velocity_z_kI = 1.0
     velocity_z_ilimit = 1.5
-    velocity_z_max = 3.0
+    velocity_z_max = 4.0
     target_z = -pi/2
 
     lookahead_distance = 0.0
@@ -252,20 +253,31 @@ for i in range(7):
         cfg['scene%d_fs'%i] = PurePidConfig(CHK_PTS[i]['f_path'][-1], -pi/2)
     if CHK_PTS[i]['b_path'] != None:
         cfg['scene%d_b'%i]  = PurePursuitConfig(CHK_PTS[i]['curve'], CHK_PTS[i]['b_path'])
-        cfg['scene%d_bs'%i] = PurePidConfig(CHK_PTS[i]['b_path'][-1], -2.10 if CHK_PTS[i]['b_path'][-1] == POINT_D else -pi/2)
-    
-# for i in range(1,6):
-#     cfg['scene%d_f'%i].target_z -= 0.25 # slightly slanted orientation
-# Meeting significant motor limit here, must use all 4 motors (and less air resistance)
-cfg['scene3_f'].target_z -= 0.25
-cfg['scene3_b'].target_z -= 0.25
-cfg['scene4_f'].target_z -= 0.25
-cfg['scene4_b'].target_z -= 0.25
-cfg['scene5_f'].target_z -= 0.25
-cfg['scene5_b'].target_z -= 0.25
+        cfg['scene%d_bs'%i] = PurePidConfig(CHK_PTS[i]['b_path'][-1], -pi/2)
 
-cfg['pointC_s'] = PurePidConfig(POINT_C, -pi/2)
-cfg['pointD_s'] = PurePidConfig(POINT_D, -2.10)
+for i in range(1,6): # slightly slanted orientation
+    if i in [1,3]:
+        cfg['scene%d_f'%i].target_z -= 0.25
+    if i in [4,5]:
+        cfg['scene%d_f'%i].target_z -= 0.30
+    if i in [2,3]:
+        cfg['scene%d_b'%i].target_z -= 0.25
+    if i in [1,4,5]:
+        cfg['scene%d_b'%i].target_z -= 0.30
+
+    if (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_A:
+        pass
+    elif (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_B:
+        cfg['scene%d_bs'%i].target_z = -pi/2 -pi/6
+    elif (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_B:
+        cfg['scene%d_bs'%i].target_z = -pi/2 -pi/6
+    elif (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_C:
+        cfg['scene%d_bs'%i].target_z = -pi/2 -pi/5
+    elif (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_D:
+        cfg['scene%d_bs'%i].target_z = -pi/2 -pi/5
+    elif (cfg['scene%d_bs'%i].target_x, cfg['scene%d_bs'%i].target_y) == POINT_E:
+        cfg['scene%d_bs'%i].target_z = -pi/2 -pi/4
+# Meeting significant motor limit here, must use all 4 motors (and less air resistance)
 
 # Setup try tolerances (x,y) 
 tryx_tol = abs(0.1/2)
@@ -273,12 +285,6 @@ tryy_tol = abs(0.1/2)
 for i in range(1,6):
     pt = globals()['POINT_%d'%i]
     cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.98)
-
-# Setup trigger to pre-notify PR for passing rugby
-cfg['rec_sc0_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_0[0],'dest_y':POINT_0[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.05},thres=0.98)
-cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':3.0,'kD':4.0,'vel':MAX_SPEED*0.60,'dz':0.05},thres=0.98)
-cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':3.0,'kD':4.0,'vel':MAX_SPEED*0.60,'dz':0.05},thres=0.98)
-cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':3.0,'kD':4.0,'vel':MAX_SPEED*0.60,'dz':0.05},thres=0.98)
 
 # Setup mode transition criteria
 cfg['try_pid_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)
@@ -288,7 +294,7 @@ cfg['default_trig'] = BreakTrigger(thres=0.99)
 
 # Setup the path sequence
 # In general:
-# velocity_shift_kP = 1.0 when super-straight, 6.0 when curved
+# velocity_shift_kP = 2.0 when super-straight, 6.0 when curved
 # curvature_penalty_kP = 0.1 when super-straight, upto 0.8 when curved
 # stopping pid: speed*0.45, 3.0, 0.0001, 3.0 OR
 # stopping pid: speed*0.60, 3.0, 0.0001, 4.0
@@ -304,7 +310,7 @@ try0_param = [  {'hook_func' : [{'call_pr':[START_COMMAND]}],
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene0_fs',
                  'cfg_param' : {'speed':MAX_SPEED*0.4, 'kP':3.0, 'kI':0.0001, 'kD':2.5, 'accel_lim':5.5},
-                 'trig_name' : 'rec_sc0_trig',
+                 'trig_name' : 'rec_ptA_trig',
                  'log_msg'   : "breaking stage before receiving pos",},
                 None, None,
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
@@ -319,7 +325,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "start running for Try Spot 1",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene1_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':3.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts1_trig',
                  'log_msg'   : "breaking stage before Try Spot 1",},
                 {'hook_func' : [{'do_try':None}],
@@ -328,13 +334,13 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene1_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'hook4':None}],
                  'cfg_name'  : 'scene1_bs',
                  'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
@@ -343,12 +349,12 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
 try2_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene2_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':2.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 2",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene2_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':3.0, 'kI':0.0001, 'kD':3.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts2_trig',
                  'log_msg'   : "breaking stage before Try Spot 2",},
                 {'hook_func' : [{"do_try":None}],
@@ -356,14 +362,14 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "do_try for Try Spot 2",},
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene2_b',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'hook4':None}],
                  'cfg_name'  : 'scene2_bs',
                  'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
@@ -372,12 +378,12 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
 try3_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene3_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':1.0, 'curvature_penalty_kP':0.1},
+                                'velocity_shift_kP':2.0, 'curvature_penalty_kP':0.1},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 3",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene3_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':1.5, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts3_trig',
                  'log_msg'   : "breaking stage before Try Spot 3",},
                 {'hook_func' : [{'do_try':None}],
@@ -386,13 +392,13 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_DIRECT]}],
                  'cfg_name'  : 'scene3_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':1.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.1},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'hook4':None}],
                  'cfg_name'  : 'scene3_bs',
                  'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
@@ -400,13 +406,13 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
 
 try4_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene4_f',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 4",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene4_fs',
-                 'cfg_param' : {'speed':2.1, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts4_trig',
                  'log_msg'   : "breaking stage before Try Spot 4",},
                 {'hook_func' : [{'do_try':None}],
@@ -415,13 +421,13 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene4_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'hook4':None}],
                  'cfg_name'  : 'scene4_bs',
                  'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
@@ -429,13 +435,13 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
 
 try5_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene5_f',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.8},
+                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.8},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 5",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene5_fs',
-                 'cfg_param' : {'speed':2.1, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts5_trig',
                  'log_msg'   : "breaking stage before Try Spot 5",},
                 {'hook_func' : [{'do_try':None}],
@@ -444,26 +450,38 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
                  'cfg_name'  : 'scene5_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'hook4':None}],
                  'cfg_name'  : 'scene5_bs',
                  'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':4.0},
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
+# Setup trigger to pre-notify PR for passing rugby
+cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.05},thres=0.98)
+cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
+cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
+cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
+cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
+
 for i in range(1,6):
     try_param = globals()['try%d_param'%i]
-    if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_C:
-        try_param[4]['trig_name'] = "rec_ptC_trig"
-    if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_D:
-        try_param[4]['trig_name'] = "rec_ptD_trig"
-    if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_E:
-        try_param[4]['trig_name'] = "rec_ptE_trig"
+    if cfg[try_param[3]['cfg_name']] != None:
+        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_A:
+            try_param[4]['trig_name'] = "rec_ptA_trig"
+        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_B:
+            try_param[4]['trig_name'] = "rec_ptB_trig"
+        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_C:
+            try_param[4]['trig_name'] = "rec_ptC_trig"
+        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_D:
+            try_param[4]['trig_name'] = "rec_ptD_trig"
+        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_E:
+            try_param[4]['trig_name'] = "rec_ptE_trig"
 
 try6_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene6_f',
@@ -485,7 +503,7 @@ try7_param = [  {'hook_func' : None,
                  'cfg_name'  : None,
                  'log_msg'   : "start running for PointC",},
                 {'hook_func' : None,
-                 'cfg_name'  : 'pointC_s',
+                 'cfg_name'  : 'scene3_bs',
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointC",},
@@ -498,7 +516,7 @@ try8_param = [  {'hook_func' : None,
                  'cfg_name'  : None,
                  'log_msg'   : "start running for PointD",},
                 {'hook_func' : None,
-                 'cfg_name'  : 'pointD_s',
+                 'cfg_name'  : 'scene1_bs',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointD",},
@@ -506,4 +524,3 @@ try8_param = [  {'hook_func' : None,
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
-

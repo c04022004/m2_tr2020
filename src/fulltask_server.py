@@ -158,7 +158,7 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
-            self.delayed_slider_thread = threading.Timer(0.5, self.unlock_ball)
+            self.delayed_slider_thread = threading.Timer(0.1, self.unlock_ball)
             self.delayed_slider_thread.start()
 
     def hook2(self):
