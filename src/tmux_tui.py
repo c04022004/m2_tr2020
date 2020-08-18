@@ -5,6 +5,7 @@ import pexpect
 import libtmux
 import atexit
 
+
 class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
         super(connectButton, self).__init__(*args, **keywords)
@@ -83,7 +84,6 @@ class tmux_helper(object):
         panes = w.list_panes()
         panes[3].send_keys('killall -9 rosmaster', enter=True)
         panes[3].send_keys('roscore', enter=True)
-        
 
 # class ds4Box(npyscreen.BoxTitle):
 #     def make_contained_widget(self, contained_widget_arguments=None):
@@ -120,7 +120,7 @@ class MyTmuxApp(npyscreen.NPSAppManaged):
     def onStart(self):
         npyscreen.setTheme(npyscreen.Themes.BlackOnWhiteTheme)
         self.registerForm("MAIN", MainForm(name="Robot/Field Configuration Program v0.9"))
-
+        self.registerForm("FORM2", Form2(name="Page 2"))
 class MainForm(npyscreen.ActionFormV2):
 
     CANCEL_BUTTON_BR_OFFSET = (2, -5)
@@ -183,6 +183,7 @@ class MainForm(npyscreen.ActionFormV2):
         confirmed = npyscreen.notify_ok_cancel("Are you sure about the settings!?", editw=1)
         if confirmed:
             self.th.launch_tr() # Spwan some threads to do tmux stuff
+            self.parentApp.setNextForm("FORM2")
 
     def exit_application(self):
         # curses.beep()
@@ -199,6 +200,31 @@ def exit_handler():
         i=len(panes)-i-1
         panes[i].send_keys('^C', enter=False, suppress_history=False)
         panes[i].send_keys("exit")
+
+class Form2(npyscreen.ActionFormV2):
+    CANCEL_BUTTON_TEXT   = "Back"
+    width=10
+    height=10
+    max_width=10
+    max_height=10
+    def create(self):
+        self.option = self.add(npyscreen.TitleSelectOne,
+        scroll_exit=True, name='Option', 
+        values = ['Option1','Option2'],
+        max_width=40, max_height=9)
+        #self.edit()
+
+        
+    def exit(self):
+        self.parentApp.switchForm(None) 
+
+    def on_ok(self):
+        npyscreen.notify_confirm("You selected "+str(self.option.get_selected_objects()), title="Notice", wrap=True, wide=True, editw=1)
+        self.parentApp.setNextForm("FORM2")
+
+    def on_cancel(self):
+        self.parentApp.setNextForm("MAIN") 
+        exit_handler()
 
 if __name__ == '__main__':
     atexit.register(exit_handler)
