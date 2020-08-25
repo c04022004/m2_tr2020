@@ -73,7 +73,10 @@ class tmux_helper(object):
         self.server = libtmux.Server()
     
     def find_session(self):
-        self.session = self.server.find_where({ "session_name": "tr_2020" })
+        if self.server.has_session("tr_2020"):
+            self.session = self.server.find_where({ "session_name": "tr_2020" })
+        else:
+            self.session = self.server.new_session("tr_2020")
         return self.session
     
     def launch_tr(self, team, color, ds4_name):
@@ -95,6 +98,24 @@ class tmux_helper(object):
         panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
         panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
         # panes[0].send_keys(l[0])
+    
+    def relaunch(self, pane_id):
+        s = self.find_session()
+        w = s.windows[0]
+        panes = w.list_panes()
+        for i in range(10):
+            panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
+            time.sleep(0.05)
+        for i in range(10):
+            panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
+            time.sleep(0.05)
+        time.sleep(0.25)
+        for i in range(10):
+            panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
+        time.sleep(0.5)
+        panes[pane_id].cmd('send-keys', 'Up')
+        panes[pane_id].enter()
+        # panes[pane_id].send_keys(self.commands[pane_id], enter=True, suppress_history=False)
 
 # class ds4Box(npyscreen.BoxTitle):
 #     def make_contained_widget(self, contained_widget_arguments=None):
@@ -214,30 +235,53 @@ def exit_handler():
     session = server.find_where({ "session_name": "tr_2020" })
     window = session.attached_window
     panes=window.list_panes()
-    for i in range(len(panes)-1):
-        i=len(panes)-i-1
-        panes[i].send_keys('^C', enter=False, suppress_history=False)
-        panes[i].send_keys("exit")
+    for pane_id in range(len(panes))[::-1]:
+        # i=len(panes)-i-1
+        for i in range(10):
+            panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
+            time.sleep(0.05)
+        for i in range(10):
+            panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
+            time.sleep(0.05)
+        time.sleep(0.25)
+        for i in range(10):
+            panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
+        time.sleep(0.5)
+        if pane_id > 0:
+            panes[pane_id].send_keys("exit")
 
 class Form2(npyscreen.ActionFormV2):
     CANCEL_BUTTON_TEXT   = "Back"
-    width=10
+    width=50
     height=10
-    max_width=10
+    max_width=50
     max_height=10
     def create(self):
         self.option = self.add(npyscreen.TitleSelectOne,
         scroll_exit=True, name='Option', 
-        values = ['Option1','Option2'],
-        max_width=40, max_height=9)
+        values = ['Relaunch hardware','Relaunch localization', 'Relaunch semi_auto'],
+        max_width=50, max_height=9)
+        self.th = tmux_helper()
 
         
     def exit(self):
         self.parentApp.switchForm(None) 
 
     def on_ok(self):
-        npyscreen.notify_confirm("You selected "+str(self.option.get_selected_objects()), title="Notice", wrap=True, wide=True, editw=1)
-        self.parentApp.setNextForm("FORM2")
+        if len(self.option.get_selected_objects()) == 0:
+            npyscreen.notify_confirm("You selected nothing!", title="Notice", wrap=True, wide=True, editw=1)
+        elif self.option.get_selected_objects()[0] == 'Relaunch hardware':
+            npyscreen.notify("Relaunching hardware...")
+            self.th.relaunch(4)
+        elif self.option.get_selected_objects()[0] == 'Relaunch localization':
+            npyscreen.notify("Relaunching localization...")
+            self.th.relaunch(0)
+        elif self.option.get_selected_objects()[0] == 'Relaunch semi_auto':
+            npyscreen.notify("Relaunching semi_auto...")
+            self.th.relaunch(1)
+
+
+        # self.parentApp.setNextForm("FORM2")
 
     def on_cancel(self):
         self.parentApp.setNextForm("MAIN") 
