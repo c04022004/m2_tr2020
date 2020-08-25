@@ -4,6 +4,7 @@
 # All rights reserved.
 # Source: https://gist.github.com/egorf/66d88056a9d703928f93
 
+import os
 import time
 import pexpect
 import subprocess
@@ -33,7 +34,8 @@ class Bluetoothctl:
         if start_failed > 1:
             raise BluetoothctlError("Bluetoothctl failed after running " + command)
 
-        return self.child.before.split("\r\n")
+        out = self.child.before.split(b"\r\n")
+        return out
 
     def start_scan(self):
         """Start bluetooth scanning process."""
@@ -115,7 +117,7 @@ class Bluetoothctl:
         """Get device info by mac address."""
         try:
             out = self.get_output("info " + mac_address)
-        except BluetoothctlError, e:
+        except BluetoothctlError as e:
             print(e)
             return None
         else:
@@ -136,13 +138,13 @@ class Bluetoothctl:
     def remove(self, mac_address):
         """Remove paired device by mac address, return success of the operation."""
         try:
-            out = self.get_output("remove " + mac_address, 3)
+            out = self.get_output("remove {}".format(mac_address), 3)
         except BluetoothctlError as e:
             print(e)
             return None
         else:
             res = self.child.expect(["not available", "Device has been removed", pexpect.EOF])
-            success = True if res == 1 else False
+            success = res == 1
             return success
 
     def connect(self, mac_address):
@@ -171,22 +173,27 @@ class Bluetoothctl:
 
 
 if __name__ == "__main__":
+    mac_addr = sys.argv[1] if len(sys.argv) > 1 else None
+    if mac_addr is None:
+        mac_addr = os.environ.get("BLUE_MAC", None)
+    if mac_addr is None:
+        mac_addr = "8C:41:F2:E1:76:BE" # TODO remove
+    mac_addr = mac_addr.upper()
+    print("Target device mac_addr: {}".format(mac_addr))
 
     print("Init bluetooth. . .")
     bl = Bluetoothctl()
 
-    # Example device ds4navy
-    mac_addr = "8C:41:F2:E1:76:BE"
-    print("Target device mac_addr: %s"% mac_addr)
-    
+    time.sleep(1)
+
     print("Ready! Removing the target and reconnect. . .")
     try:
-        resp = bl.remove(mac_addr)
+        bl.remove(mac_addr)
     except BluetoothctlError as e:
         print(e)
     except pexpect.exceptions.TIMEOUT:
         pass
-    
+
     print("Start scanning and wait for device. . ."),
     bl.start_scan()
     for i in range(0, 2):
@@ -208,7 +215,7 @@ if __name__ == "__main__":
         except pexpect.exceptions.TIMEOUT:
             pass
     print("")
-    
+
     print("Connecting. . ."),
     while True:
         try:
