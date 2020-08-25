@@ -9,13 +9,16 @@ import atexit
 class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
         super(connectButton, self).__init__(*args, **keywords)
+        self.ds4_name=keywords['ds4_name']
         #self.bl = bluetoothctl.Bluetoothctl()
 
     def whenPressed(self):
         # Example device ds4berry
         mac_addr = "8C:41:F2:8C:DD:A2"
-        npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%mac_addr, title='Connection in progress...')
-        
+        # npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%mac_addr, title='Connection in progress...')
+        npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%self.ds4_name.get_selected_objects()[0], title='Connection in progress...')
+        time.sleep(1)
+        return
         # Removing the target and reconnect
         try:
             self.bl.remove(mac_addr)
@@ -71,19 +74,27 @@ class tmux_helper(object):
     
     def find_session(self):
         self.session = self.server.find_where({ "session_name": "tr_2020" })
+        return self.session
     
-    def launch_tr(self):
-        t = self.server
-        s = t.sessions[0]
+    def launch_tr(self, team, color, ds4_name):
+        # t = self.server
+        s = self.find_session()
         w = s.windows[0]
         p = s.attached_pane
         npyscreen.notify(p.get('pane_current_path'))
         w.split_window(vertical=True, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="2")
+        w.split_window(vertical=True, attach=False, target="2")
         panes = w.list_panes()
-        panes[3].send_keys('killall -9 rosmaster', enter=True)
-        panes[3].send_keys('roscore', enter=True)
+        panes[2].send_keys('killall -9 rosmaster', enter=True, suppress_history=False)
+        panes[2].send_keys('roscore', enter=True, suppress_history=False)
+        time.sleep(5)
+        panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
+        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=%s'%(team, color, ds4_name), suppress_history=False)
+        panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
+        panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
+        # panes[0].send_keys(l[0])
 
 # class ds4Box(npyscreen.BoxTitle):
 #     def make_contained_widget(self, contained_widget_arguments=None):
@@ -145,19 +156,19 @@ class MainForm(npyscreen.ActionFormV2):
             value=1.2, out_of=5.5, lowest=1.2, step=0.1,
             max_width=70, rely=_rely,
         )
-        _rely += 4
-        self.btn = self.add(connectButton, name="DualShock4 Connection Wizard",
-            max_height=1, relx=0, rely=_rely,
-        )
-        _rely += 1
+        _rely += 3
         self.ds4_name = self.add(npyscreen.TitleSelectOne,
             scroll_exit=True, name='Joystick name', 
             values = ['ds4red', 'ds4blue', 'ds4black', 'ds4white',
                     'ds4orange', 'ds4navy', 'ds4berry', 'input/js0'],
-            max_width=40, max_height=9, rely=_rely,
+            max_width=40, max_height=9, rely=_rely+1,
+        )
+        # _rely += 1
+        self.btn = self.add(connectButton, name="DualShock4 Connection Wizard",
+            max_height=1, relx=0, rely=_rely, ds4_name=self.ds4_name,
         )
         _relx += 42
-        _rely -= 1
+        _rely += 1
         self.color = self.add(npyscreen.TitleSelectOne, 
             scroll_exit=True, name='Field Color', 
             values = ['red', 'blue'],
@@ -180,10 +191,17 @@ class MainForm(npyscreen.ActionFormV2):
             pass # Kill all tmux/ROS stuff and perform a clean shutdown
 
     def on_ok(self):
-        confirmed = npyscreen.notify_ok_cancel("Are you sure about the settings!?", editw=1)
-        if confirmed:
-            self.th.launch_tr() # Spwan some threads to do tmux stuff
-            self.parentApp.setNextForm("FORM2")
+        if (len(self.team.get_selected_objects()) == 0 or 
+            len(self.color.get_selected_objects()) == 0 or 
+            len(self.ds4_name.get_selected_objects()) == 0):
+            npyscreen.notify_confirm("Invalid input: You didnt fill in all the fields!")
+        else:
+            confirmed = npyscreen.notify_ok_cancel("Are you sure about the settings!?", editw=1)
+            if confirmed:
+                self.th.launch_tr(team=self.team.get_selected_objects()[0],
+                                color=self.color.get_selected_objects()[0],
+                                ds4_name=self.ds4_name.get_selected_objects()[0]) # Spwan some threads to do tmux stuff
+                self.parentApp.setNextForm("FORM2")
 
     def exit_application(self):
         # curses.beep()
