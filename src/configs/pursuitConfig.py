@@ -281,7 +281,7 @@ for i in range(1,6): # slightly slanted orientation
 
 # Setup try tolerances (x,y) 
 tryx_tol = abs(0.1/2)
-tryy_tol = abs(0.1/2)
+tryy_tol = abs(0.08/2)
 for i in range(1,6):
     pt = globals()['POINT_%d'%i]
     cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.98)
@@ -383,7 +383,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : "start running for Try Spot 3",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene3_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts3_trig',
                  'log_msg'   : "breaking stage before Try Spot 3",},
                 {'hook_func' : [{'do_try':None}],

@@ -198,8 +198,9 @@ class FulltaskSceneHandler(object):
             if self.as_check_preempted(): return
             if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
                 self.delayed_lifter_thread.cancel()
-            self.delayed_lifter_thread = threading.Timer(0.2, self.ball_guard)
+            self.delayed_lifter_thread = threading.Timer(0.05, self.ball_guard)
             self.delayed_lifter_thread.start()
+            time.sleep(0.5)
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
             slider_retry_count = 0
