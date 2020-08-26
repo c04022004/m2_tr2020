@@ -16,7 +16,7 @@ POINT_E = (0.92, 5.3)   # 5th ball pass (to TS5)
 
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
-tryx_offset = 0.05 # reserve for overshoot
+tryx_offset = 0.10 # reserve for overshoot
 POINT_1 = (5.81-tryx_offset, 3.09+0.5*0.03+0*1.3)
 POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
@@ -205,8 +205,8 @@ class PurePidConfig: # Default setting of MATCH_RED
         pure_pid_data.kD = kD
         pure_pid_data.integral_absMax = self.integral_absMax
 
-        pure_pid_data.deadzone_x = 0.02
-        pure_pid_data.deadzone_y = 0.02
+        pure_pid_data.deadzone_x = 0.005
+        pure_pid_data.deadzone_y = 0.005
         pure_pid_data.deadzone_z = 0.017 # 1deg
 
         pure_pid_data.accel_limit = accel_lim
@@ -284,7 +284,7 @@ tryx_tol = abs(0.1/2)
 tryy_tol = abs(0.08/2)
 for i in range(1,6):
     pt = globals()['POINT_%d'%i]
-    cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.98)
+    cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.99)
 
 # Setup mode transition criteria
 cfg['try_pid_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)

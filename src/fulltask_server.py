@@ -9,6 +9,9 @@ from visualization_msgs.msg import Marker
 from actionlib_msgs.msg import GoalStatus
 from m2_tr2020.msg import *
 
+from m2_lidar_icp_ros.srv import *
+from std_msgs.msg import Float32
+
 import time
 import numpy as np
 from numpy import pi
@@ -40,6 +43,14 @@ class FulltaskSceneHandler(object):
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
+
+        self.set_x_pub = rospy.Publisher("odom_set_x", Float32, queue_size=1)
+        self.set_y_pub = rospy.Publisher("odom_set_y", Float32, queue_size=1)
+        self.icp_srv = rospy.ServiceProxy('lidar_icp_server/get_estimated_pose', GetEstimatedPose)
+        try:
+            self.icp_srv.wait_for_service(timeout=0.5)
+        except rospy.ROSException:
+            rospy.logerr("No icp service avalible!")
 
         self._action_name = "tr_server"
         self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start=False)
@@ -127,7 +138,14 @@ class FulltaskSceneHandler(object):
         # State enum: http://docs.ros.org/kinetic/api/actionlib_msgs/html/msg/GoalStatus.html
         states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
         rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
-        self.path_finish_event.set()
+
+    def move_base_check_aborted(self):
+        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
+        state = self.move_base_client.get_state()
+        if state == states.index("ABORTED"):
+            rospy.logwarn("SAN check at move_base not passed, or odom is uncertain")
+            return True
+        return False
     
     def as_state_decode(self, state, action_name):
         states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
@@ -191,7 +209,17 @@ class FulltaskSceneHandler(object):
             self.try_event.wait(1.5)
             self.as_check_preempted()
             return
-        elif robot_type == ROBOT_TR1:
+        try:
+            adjusted_pose = self.icp_srv()
+            rospy.loginfo("adjusted x, y: %.4f %.4f"%(adjusted_pose.estimated_pose.position.x,adjusted_pose.estimated_pose.position.y))
+            self.set_x_pub.publish(adjusted_pose.estimated_pose.position.x)
+            self.set_y_pub.publish(adjusted_pose.estimated_pose.position.y)
+            self.try_event.clear()
+            self.try_event.wait(0.5) # Wait for the PID to correct the position
+            if self.as_check_preempted(): return
+        except rospy.ServiceException as e:
+            rospy.logerr(e)
+        if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             self.try_event.clear()
             self.try_event.wait(0.8)
@@ -226,7 +254,6 @@ class FulltaskSceneHandler(object):
     def unlock_ball(self):
         if robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1) # up
-            # if self.slider_pos != True:
 
     def slider_cb(self, msg):
         self.slider_pos = msg.data
@@ -242,7 +269,8 @@ class FulltaskSceneHandler(object):
         try:
             self.command_pr_srv(command)
         except rospy.ServiceException as e:
-            rospy.logerr(e)
+            pass
+            # rospy.logerr(e)
             # rospy.logerr("wireless_comm service unavailable!")
 
     def process_hooks(self, hook_list):
@@ -283,7 +311,11 @@ class FulltaskSceneHandler(object):
                         done_cb=self.move_base_client_done_cb)
                     rospy.loginfo(params[i]['log_msg'])
                     self.path_finish_event.wait()
-                    if self.as_check_preempted(): return
+                    if self.move_base_check_aborted():
+
+                        return
+                    if self.as_check_preempted():
+                        return
 
         # --- Try sequence - stage5 ---
         # Processing the hooks
