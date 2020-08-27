@@ -6,4 +6,6 @@ DS4_NAME_TO_MAC = {
         "ds4berry": "8c:41:f2:8c:dd:a2",
         "ds4navy": "8c:41:f2:e1:76:be",
         "ds4orange": "8c:41:f2:16:a8:ba",
+        "ds4camo": "a0:ab:51:b3:78:a8",
+        "ds4stripe": "4c:b9:9b:0b:24:56",
         }
