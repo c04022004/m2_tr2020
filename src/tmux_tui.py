@@ -1,24 +1,35 @@
+#!/usr/bin/env python
+
 import npyscreen, time
 import threading
-#import bluetoothctl
+import bluetoothctl
 import pexpect
 import libtmux
 import atexit
 
+from ds4_names import DS4_NAME_TO_MAC
 
 class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
         super(connectButton, self).__init__(*args, **keywords)
         self.ds4_name=keywords['ds4_name']
-        #self.bl = bluetoothctl.Bluetoothctl()
+        self.bl = bluetoothctl.Bluetoothctl()
 
     def whenPressed(self):
         # Example device ds4berry
-        mac_addr = "8C:41:F2:8C:DD:A2"
+        ds4_name = next(iter(self.ds4_name.get_selected_objects()), None)
+        if ds4_name is None:
+            npyscreen.notify('Choose a ds4 device first', title='Error')
+            time.sleep(0.5)
+            return
+        if ds4_name == 'input/js0':
+            npyscreen.notify('input/js0 is already connected', title='Error')
+            time.sleep(0.5)
+            return
+        mac_addr = DS4_NAME_TO_MAC[ds4_name]
         # npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%mac_addr, title='Connection in progress...')
-        npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%self.ds4_name.get_selected_objects()[0], title='Connection in progress...')
+        npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. ' % ds4_name, title='Connection in progress...')
         time.sleep(1)
-        return
         # Removing the target and reconnect
         try:
             self.bl.remove(mac_addr)
@@ -28,13 +39,14 @@ class connectButton(npyscreen.ButtonPress):
             pass
         self.bl.start_scan()
         time.sleep(1)
-        
-        npyscreen.notify('Scan and attempt to pair\nPress ps+share on your DualShock4 until it blinks quickly...', title='Connection in progress...')
+
         paired = False
         attempts = 0
-        while not paired and attempts<5:
+        MAX_ATTEMPTS=5
+        while not paired and attempts < MAX_ATTEMPTS:
+            attempts += 1
+            npyscreen.notify('Scan and attempt to pair\nAttempt {}/{}\nPress ps+share on your DualShock4 until it blinks quickly...'.format(attempts, MAX_ATTEMPTS), title='Connection in progress...')
             try:
-                attempts += 1
                 paired = self.bl.pair(mac_addr)
             except bluetoothctl.BluetoothctlError as e:
                 print(e)
@@ -45,7 +57,6 @@ class connectButton(npyscreen.ButtonPress):
             time.sleep(1)
             return
 
-        
         npyscreen.notify('Negotiating the remaning stuffs, keep the DS4 in alive...', title='Connection in progress...')
         paired = False
         attempts = 0
