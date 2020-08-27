@@ -2,6 +2,7 @@
     <arg name = "joy" default = "/dev/input/js0"/>
     <arg name = "team"/>
     <arg name = "color"/>
+    <arg name = "manual_vel"/>
 
     <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
         <arg name = "joy" value="$(arg joy)"/>
@@ -15,6 +16,7 @@
         respawn = "true">
         <param name="team" type="str" value="$(arg team)" />
         <param name="color" type="str" value="$(arg color)" />
+        <param name="max_speed" type="double" value="$(arg manual_vel)" />
     </node>
 
     <node name = "mode_swticher"

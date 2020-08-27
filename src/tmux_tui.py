@@ -79,7 +79,7 @@ class tmux_helper(object):
             self.session = self.server.new_session("tr_2020")
         return self.session
     
-    def launch_tr(self, team, color, ds4_name):
+    def launch_tr(self, team, color, manual_vel, ds4_name):
         # t = self.server
         s = self.find_session()
         w = s.windows[0]
@@ -94,7 +94,7 @@ class tmux_helper(object):
         panes[2].send_keys('roscore', enter=True, suppress_history=False)
         time.sleep(5)
         panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
-        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=%s'%(team, color, ds4_name), suppress_history=False)
+        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
         panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
         panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
         # panes[0].send_keys(l[0])
@@ -221,6 +221,7 @@ class MainForm(npyscreen.ActionFormV2):
             if confirmed:
                 self.th.launch_tr(team=self.team.get_selected_objects()[0],
                                 color=self.color.get_selected_objects()[0],
+                                manual_vel=self.manual_vel.value,
                                 ds4_name=self.ds4_name.get_selected_objects()[0]) # Spwan some threads to do tmux stuff
                 self.parentApp.setNextForm("FORM2")
 

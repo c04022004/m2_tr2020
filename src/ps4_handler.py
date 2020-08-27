@@ -14,8 +14,6 @@ import chassis_control
 
 direct = ChannelTwist()
 direct.channel = ChannelTwist.CONTROLLER
-max_linear_speed = 2.0
-max_rotational_speed = 1.5
 
 old_data = Ps4Data()
 
@@ -228,6 +226,8 @@ def try_call_motors(set_bool):
             rospy.logwarn('/motor_base_%d/set_enable_state timed out!'%i)
 
 rospy.init_node('ps4_vel_controller')
+max_linear_speed = rospy.get_param('~max_speed')
+max_rotational_speed = 1.5
 vel_pub = rospy.Publisher('/chan_cmd_vel', ChannelTwist, queue_size = 1)
 tr_cancel_pub = rospy.Publisher('/tr_server/cancel', GoalID, queue_size = 1)
 sw_cancel_pub = rospy.Publisher('/Switch/cancel', GoalID, queue_size = 1)
