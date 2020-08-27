@@ -9,6 +9,9 @@ from visualization_msgs.msg import Marker
 from actionlib_msgs.msg import GoalStatus
 from m2_tr2020.msg import *
 
+from m2_lidar_icp_ros.srv import *
+from std_msgs.msg import Float32
+
 import time
 import numpy as np
 from numpy import pi
@@ -32,6 +35,7 @@ class FulltaskSceneHandler(object):
 
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
+        self.io_sub_slider = rospy.Subscriber('io_board1/io_3/get_state', Bool, self.slider_cb)
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
         self.delayed_call_pr_thread = None
@@ -39,6 +43,14 @@ class FulltaskSceneHandler(object):
 
         self.cartop_status_pub = rospy.Publisher("cartop_status", Marker, queue_size = 1)
         self.omni_frame = rospy.get_param("~base_frame", "omni_base")
+
+        self.set_x_pub = rospy.Publisher("odom_set_x", Float32, queue_size=1)
+        self.set_y_pub = rospy.Publisher("odom_set_y", Float32, queue_size=1)
+        self.icp_srv = rospy.ServiceProxy('lidar_icp_server/get_estimated_pose', GetEstimatedPose)
+        try:
+            self.icp_srv.wait_for_service(timeout=0.5)
+        except rospy.ROSException:
+            rospy.logerr("No icp service avalible!")
 
         self._action_name = "tr_server"
         self._as = actionlib.SimpleActionServer(self._action_name, FulltaskAction, execute_cb=self.execute_cb, auto_start=False)
@@ -52,6 +64,13 @@ class FulltaskSceneHandler(object):
             exit(1)
 
         self.command_pr_srv = rospy.ServiceProxy('request_partner_info', Request)
+        if robot_type in [ROBOT_TR1,ROBOT_TR2]:
+            try:
+                self.command_pr_srv.wait_for_service(timeout=0.5)
+            except rospy.ROSException:
+                rospy.logerr("No wireless_comm service avalible!")
+
+
 
     def stop_cb(self, req):
         self.path_finish_event.set() # set the finish event manually, usual for preempting a goal action
@@ -66,12 +85,12 @@ class FulltaskSceneHandler(object):
             if x_min!=None and x_max!= None and y_min!=None and y_max!=None:
                 if pose.x >= x_min and pose.x <= x_max and pose.y >= y_min and pose.y <= y_max:
                     self.path_finish_event.set()
-            # elif x_min!=None and x_max!= None:
-            #     if pose.x >= x_min and pose.x <= x_max:
-            #         self.path_finish_event.set()
-            # elif y_min!=None and y_max!= None:
-            #     if pose.y >= y_min and pose.y <= y_max:
-            #         self.path_finish_event.set()
+            elif x_min!=None and x_max!= None:
+                if pose.x >= x_min and pose.x <= x_max:
+                    self.path_finish_event.set()
+            elif y_min!=None and y_max!= None:
+                if pose.y >= y_min and pose.y <= y_max:
+                    self.path_finish_event.set()
             # Breaking out due to eta remaining
             if eta!=None:
                 twist_lin = msg.cur_odom.twist.twist.linear
@@ -119,7 +138,14 @@ class FulltaskSceneHandler(object):
         # State enum: http://docs.ros.org/kinetic/api/actionlib_msgs/html/msg/GoalStatus.html
         states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
         rospy.logwarn("move_base_client goal done: State=%d %s"%(state, states[state]))
-        self.path_finish_event.set()
+
+    def move_base_check_aborted(self):
+        states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
+        state = self.move_base_client.get_state()
+        if state == states.index("ABORTED"):
+            rospy.logwarn("SAN check at move_base not passed, or odom is uncertain")
+            return True
+        return False
     
     def as_state_decode(self, state, action_name):
         states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
@@ -150,7 +176,7 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
-            self.delayed_slider_thread = threading.Timer(0.5, self.unlock_ball)
+            self.delayed_slider_thread = threading.Timer(0.1, self.unlock_ball)
             self.delayed_slider_thread.start()
 
     def hook2(self):
@@ -173,26 +199,45 @@ class FulltaskSceneHandler(object):
         self.ball_guard()
 
     def hook5(self):
-        self.ball_guard()
+        pass
 
     def do_try(self):
         if robot_type == ROBOT_NONE:
             rospy.logwarn("If you are not using fake_robot, go check your code!")
             rospy.logwarn("Default to a 1.5 second sleep when ROBOT_NONE is set!")
-            # self.path_finish_event.wait(1.5)
-            time.sleep(1.5)
+            self.try_event.clear()
+            self.try_event.wait(1.5)
             self.as_check_preempted()
             return
-        elif robot_type == ROBOT_TR1:
+        try:
+            adjusted_pose = self.icp_srv()
+            rospy.loginfo("adjusted x, y: %.4f %.4f"%(adjusted_pose.estimated_pose.position.x,adjusted_pose.estimated_pose.position.y))
+            self.set_x_pub.publish(adjusted_pose.estimated_pose.position.x)
+            self.set_y_pub.publish(adjusted_pose.estimated_pose.position.y)
+            self.try_event.clear()
+            self.try_event.wait(0.5) # Wait for the PID to correct the position
+            if self.as_check_preempted(): return
+        except rospy.ServiceException as e:
+            rospy.logerr(e)
+        if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
-            self.path_finish_event.wait(0.75)
+            self.try_event.clear()
+            self.try_event.wait(0.8)
             if self.as_check_preempted(): return
             if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
                 self.delayed_lifter_thread.cancel()
-            self.delayed_lifter_thread = threading.Timer(0.1, self.ball_guard)
+            self.delayed_lifter_thread = threading.Timer(0.05, self.ball_guard)
             self.delayed_lifter_thread.start()
+            time.sleep(0.5)
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
+            slider_retry_count = 0
+            while self.slider_pos != True:
+                self.try_event.wait(0.1)
+                slider_retry_count += 1
+                if slider_retry_count > 10:
+                    rospy.logerr_throttle(1, "Slider not pressing against limit switch!!")
+                if self.as_check_preempted(): return
             self.dji_client.send_goal_and_wait(TryGoal(scene_id=3))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
             self.try_event.clear()
@@ -200,8 +245,6 @@ class FulltaskSceneHandler(object):
 
             self.dji_client.send_goal(TryGoal(scene_id=4))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
-            # self.try_event.clear()
-            # self.try_event.wait(0.7)
 
             if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
                 self.delayed_slider_thread.cancel()
@@ -212,6 +255,9 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1) # up
 
+    def slider_cb(self, msg):
+        self.slider_pos = msg.data
+
     def ball_guard(self):
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(0) # retract
@@ -220,8 +266,12 @@ class FulltaskSceneHandler(object):
 
     def call_pr(self, command):
         rospy.loginfo("CALL PR: {}".format(command))
-        if robot_type in [ROBOT_TR1,ROBOT_TR2]:
+        try:
             self.command_pr_srv(command)
+        except rospy.ServiceException as e:
+            pass
+            # rospy.logerr(e)
+            # rospy.logerr("wireless_comm service unavailable!")
 
     def process_hooks(self, hook_list):
         if hook_list == None:
@@ -231,10 +281,14 @@ class FulltaskSceneHandler(object):
                 rospy.logdebug("Processing hook self.%s"%hook)
                 try:
                     method = getattr(self, hook)
-                    if arg != None:
-                        method(*arg)
-                    else:
-                        method()
+                    try:
+                        if arg != None:
+                            method(*arg)
+                        else:
+                            method()
+                    except Exception as e:
+                        rospy.logerr(e)
+                        rospy.logerr("Error processing hook self.%s"%hook)
                 except AttributeError as e:
                     rospy.logerr(e)
                     rospy.logerr("Class %s does not implement %s"%(self.__class__.__name__,hook))
@@ -257,7 +311,11 @@ class FulltaskSceneHandler(object):
                         done_cb=self.move_base_client_done_cb)
                     rospy.loginfo(params[i]['log_msg'])
                     self.path_finish_event.wait()
-                    if self.as_check_preempted(): return
+                    if self.move_base_check_aborted():
+
+                        return
+                    if self.as_check_preempted():
+                        return
 
         # --- Try sequence - stage5 ---
         # Processing the hooks
@@ -276,24 +334,10 @@ class FulltaskSceneHandler(object):
 
     def execute_cb(self, goal):
         # print(goal)
-        if (goal.scene_id == 0):
-            self.scene_func(0, try0_param)
-        if (goal.scene_id == 1):
-            self.scene_func(1, try1_param)
-        if (goal.scene_id == 2):
-            self.scene_func(2, try2_param)
-        if (goal.scene_id == 3):
-            self.scene_func(3, try3_param)
-        if (goal.scene_id == 4):
-            self.scene_func(4, try4_param)
-        if (goal.scene_id == 5):
-            self.scene_func(5, try5_param)
-        if (goal.scene_id == 6):
-            self.scene_func(6, try6_param)
-        if (goal.scene_id == 7):
-            self.scene_func(7, try7_param)
-        if (goal.scene_id == 8):
-            self.scene_func(8, try8_param)
+        if goal.scene_id in range(9):
+            id = goal.scene_id
+            param = globals()['try%d_param'%id]
+            self.scene_func(id, param)
         if (goal.scene_id == 9):
             self.sample_scene()
 
@@ -301,6 +345,8 @@ if __name__ == "__main__":
     rospy.init_node('tr_server')
     match_color = phrase_color_from_launch()
     robot_type = phrase_team_from_launch()
+    if match_color == None:
+        exit(1)
     for c in cfg.values():
         c.setFieldColor(match_color)
     fulltask_server = FulltaskSceneHandler()
