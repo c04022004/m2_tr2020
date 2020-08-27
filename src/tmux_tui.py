@@ -243,23 +243,26 @@ class MainForm(npyscreen.ActionFormV2):
 
 def exit_handler():
     server = libtmux.Server()
-    session = server.find_where({ "session_name": "tr_2020" })
-    window = session.attached_window
-    panes=window.list_panes()
-    for pane_id in range(len(panes))[::-1]:
-        # i=len(panes)-i-1
-        for i in range(10):
-            panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
-            time.sleep(0.05)
-        for i in range(10):
-            panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
-            time.sleep(0.05)
-        time.sleep(0.25)
-        for i in range(10):
-            panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
-        time.sleep(0.5)
-        if pane_id > 0:
-            panes[pane_id].send_keys("exit")
+    try:
+        session = server.find_where({ "session_name": "tr_2020" })
+        window = session.attached_window
+        panes=window.list_panes()
+        for pane_id in range(len(panes))[::-1]:
+            # i=len(panes)-i-1
+            for i in range(10):
+                panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
+                time.sleep(0.05)
+            for i in range(10):
+                panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
+                time.sleep(0.05)
+            time.sleep(0.25)
+            for i in range(10):
+                panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
+            time.sleep(0.5)
+            if pane_id > 0:
+                panes[pane_id].send_keys("exit")
+    except libtmux.exc.LibTmuxException as e:
+        print("Error during tmux cleanup: {}".format(e))
 
 class Form2(npyscreen.ActionFormV2):
     CANCEL_BUTTON_TEXT   = "Back"
