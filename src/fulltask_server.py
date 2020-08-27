@@ -312,7 +312,6 @@ class FulltaskSceneHandler(object):
                     rospy.loginfo(params[i]['log_msg'])
                     self.path_finish_event.wait()
                     if self.move_base_check_aborted():
-
                         return
                     if self.as_check_preempted():
                         return

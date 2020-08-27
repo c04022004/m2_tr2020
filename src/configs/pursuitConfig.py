@@ -16,7 +16,7 @@ POINT_E = (0.92, 5.3)   # 5th ball pass (to TS5)
 
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
-tryx_offset = 0.10 # reserve for overshoot
+tryx_offset = 0.075 # reserve for overshoot
 POINT_1 = (5.81-tryx_offset, 3.09+0.5*0.03+0*1.3)
 POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
