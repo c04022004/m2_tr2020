@@ -100,10 +100,11 @@
 
 	<!-- Arduino sheild to used DJI motors -->
 	<node name="dji_controller_node" pkg="m2_dji_can" type="controller_node.py" output="screen" >
-    	<param name="port_name" value="/dev/arduino-8543333323135110B1C1" />
-    	<param name="baudrate" type="int" value="115200" />
-    	<param name="num_motors" type="int" value="2" />
-    </node>
+		<!-- <param name="port_name" value="/dev/arduino-8543333323135110B1C1" /> -->
+		<param name="port_name" value="/dev/arduino-757343239393514191C1" />
+		<param name="baudrate" type="int" value="115200" />
+		<param name="num_motors" type="int" value="2" />
+	</node>
 	
 	<!-- Convert cmd_vel to motor v_setpoint -->
 	<include file="$(find m2_chassis_kinematics)/launch/owheel_kinematics.launch">

@@ -28,7 +28,7 @@ def rospy_shutdown_cb():
     exec_event.set()
 
 def as_preempt_cb():
-    rospy.logwarn("fulltask goal preempt request")
+    rospy.logwarn("dji_server goal preempt request")
     if _as.is_active():
         _as.set_preempted()
         set_enable_state_srv(0, False)
@@ -36,7 +36,7 @@ def as_preempt_cb():
 
 def as_check_preempted():
     if not _as.is_active() :
-        rospy.logwarn("shutdown request received, or fulltask_server was preempted. returning...")
+        rospy.logwarn("shutdown request received, or dji_server was preempted. returning...")
         rospy.logwarn("_as.is_active(): %d"%(_as.is_active()))
         rospy.logwarn("_as.is_preempt_requested: %d"%(_as.is_preempt_requested()))
         set_enable_state_srv(0, False)
