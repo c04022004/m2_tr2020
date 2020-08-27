@@ -27,4 +27,6 @@
         output = "screen"
         respawn = "true" />
 
+    <include file="$(find m2_lidar_icp_ros)/launch/icp_rplidar.launch" />
+
 </launch>
