@@ -30,10 +30,10 @@
     <node name="lidar_icp_server" pkg="m2_lidar_icp_ros" type="icp_service.py" output="screen">
         <param name="lidar_mount_x" type="double" value="0.0"/>
         <param name="lidar_mount_y" type="double" value="0.23"/>
-        <param name="lidar_mount_z" type="double" value="1.57079632679"/>
+        <param name="lidar_mount_z" type="double" value="-1.57079632679"/>
         <param name="invert_scan_multiplier" value="-1.0" /> <!-- -1.0 if lidar is flipped -->
-        <param name="angle_min" value="-1.2"/> <!-- avoid the wheel -->
-        <param name="angle_max" value="1.2"/>  <!-- avoid the wheel -->
+        <param name="angle_min" value="1.9"/> <!-- avoid the wheel -->
+        <param name="angle_max" value="4.38"/>  <!-- avoid the wheel -->
         <param name="x_min" value="-0.02" />  <!-- red game field -->
         <param name="x_max" value="6.67" /> <!-- red game field -->
     </node>
