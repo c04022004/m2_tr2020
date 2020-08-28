@@ -201,6 +201,14 @@ class FulltaskSceneHandler(object):
     def hook5(self):
         pass
 
+    def icp_decode(self, msg):
+        icp_estimate = (msg.estimated_pose.position.x, msg.estimated_pose.position.y)
+        ref_odom     = (msg.original_pose.position.x, msg.original_pose.position.y)
+        error_metric =  msg.mae
+        rospy.loginfo("icp: (%.2f,%.2f) -> (%.2f,%.2f), mae: %.2f"%
+            (icp_estimate[0], icp_estimate[1], ref_odom[0], ref_odom[1], error_metric))
+        return icp_estimate, ref_odom, error_metric
+
     def do_try(self):
         if robot_type == ROBOT_NONE:
             rospy.logwarn("If you are not using fake_robot, go check your code!")
@@ -210,10 +218,10 @@ class FulltaskSceneHandler(object):
             self.as_check_preempted()
             return
         try:
-            adjusted_pose = self.icp_srv()
-            rospy.loginfo("adjusted x, y: %.4f %.4f"%(adjusted_pose.estimated_pose.position.x,adjusted_pose.estimated_pose.position.y))
-            self.set_x_pub.publish(adjusted_pose.estimated_pose.position.x)
-            self.set_y_pub.publish(adjusted_pose.estimated_pose.position.y)
+            response = self.icp_srv()
+            self.icp_decode(response)
+            # self.set_x_pub.publish(adjusted_pose.estimated_pose.position.x)
+            # self.set_y_pub.publish(adjusted_pose.estimated_pose.position.y)
             self.try_event.clear()
             self.try_event.wait(0.5) # Wait for the PID to correct the position
             if self.as_check_preempted(): return

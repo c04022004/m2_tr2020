@@ -84,7 +84,7 @@ class tmux_helper(object):
         s = self.find_session()
         w = s.windows[0]
         p = s.attached_pane
-        npyscreen.notify(p.get('pane_current_path'))
+        npyscreen.notify("Starting...")
         w.split_window(vertical=True, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="2")
@@ -96,7 +96,12 @@ class tmux_helper(object):
         panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
         panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
         panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
-        panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
+
+        if team == "rx":
+            panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
+        elif team == "rtx":
+            panes[4].send_keys('roslaunch m2_tr2020 base_hw_djimotor.launch', suppress_history=False)
+
         # panes[0].send_keys(l[0])
     
     def relaunch(self, pane_id):
@@ -238,10 +243,10 @@ def exit_handler():
     panes=window.list_panes()
     for pane_id in range(len(panes))[::-1]:
         # i=len(panes)-i-1
-        for i in range(10):
+        for i in range(5):
             panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
             time.sleep(0.05)
-        for i in range(10):
+        for i in range(5):
             panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
             time.sleep(0.05)
         time.sleep(0.25)
@@ -281,11 +286,9 @@ class Form2(npyscreen.ActionFormV2):
             npyscreen.notify("Relaunching semi_auto...")
             self.th.relaunch(1)
 
-
-        # self.parentApp.setNextForm("FORM2")
-
     def on_cancel(self):
-        self.parentApp.setNextForm("MAIN") 
+        self.parentApp.setNextForm("MAIN")
+        npyscreen.notify("Exiting...")
         exit_handler()
 
 if __name__ == '__main__':
