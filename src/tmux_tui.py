@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 import npyscreen, time
+import re
+import os
 import threading
+import subprocess
 import bluetoothctl
+import glob
 import pexpect
 import libtmux
 import atexit
@@ -95,6 +99,30 @@ class connectButton(npyscreen.ButtonPress):
         self.set_status('Connection Finished', 'Done')
         time.sleep(1)
         return
+
+class ListDs4Button(npyscreen.ButtonPress):
+    def __init__(self, *args, **keywords):
+        super(ListDs4Button, self).__init__(*args, **keywords)
+
+    def whenPressed(self):
+        files = list(map(lambda x: x[5:], iter(glob.glob('/dev/ds4*'))))
+
+        if os.path.exists('/dev/input/js0'):
+            mac = detect_mac('/dev/input/js0')
+            files.append('input/js0 ({})'.format(mac))
+
+        npyscreen.notify_wait("Connected devices: {}".format(files if len(files) > 0 else "None"))
+
+DEVNULL = open(os.devnull, 'wb')
+
+def detect_mac(file):
+    cmd = subprocess.check_output(["udevadm", "info", "--attribute-walk", "-n", file], stderr=DEVNULL, universal_newlines=True)
+    regex = re.compile('^[ \\t]*ATTRS\\{uniq\\}=="(([0-9a-f]{2}:){5}[0-9a-f]{2})"$')
+    for line in cmd.split("\n"):
+        match = regex.match(line)
+        if match is not None:
+            return match.group(1)
+    return None
 
 class tmux_helper(object):
     server = None
@@ -213,14 +241,16 @@ class MainForm(npyscreen.ActionFormV2):
             scroll_exit=True, name='Joystick name', 
             values = ['ds4red', 'ds4blue', 'ds4black', 'ds4white',
                     'ds4orange', 'ds4navy', 'ds4berry', 'input/js0'],
-            max_width=40, max_height=9, rely=_rely+1,
+            max_width=40, max_height=9, rely=_rely+2,
         )
         # _rely += 1
         self.btn = self.add(connectButton, name="DualShock4 Connection Wizard",
             max_height=1, relx=0, rely=_rely, ds4_name=self.ds4_name,
         )
+        self.list_ds4 = self.add(ListDs4Button, name="List DS4 devices", max_height=1, relx=0, rely=_rely+1)
+
         _relx += 42
-        _rely += 1
+        _rely += 2
         self.color = self.add(npyscreen.TitleSelectOne, 
             scroll_exit=True, name='Field Color', 
             values = ['red', 'blue'],
