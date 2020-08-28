@@ -107,9 +107,11 @@ class ListDs4Button(npyscreen.ButtonPress):
     def whenPressed(self):
         files = list(map(lambda x: x[5:], iter(glob.glob('/dev/ds4*'))))
 
-        if os.path.exists('/dev/input/js0'):
-            mac = detect_mac('/dev/input/js0')
-            files.append('input/js0 ({})'.format(mac))
+        for ctr in range(0, 10):
+            path = '/dev/input/js{}'.format(ctr)
+            if os.path.exists(path):
+                mac = detect_mac(path)
+                files.append('{} ({})'.format(path[5:], mac))
 
         npyscreen.notify_wait("Connected devices: {}".format(files if len(files) > 0 else "None"))
 
