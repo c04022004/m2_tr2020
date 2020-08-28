@@ -137,7 +137,7 @@ class Bluetoothctl:
     def pair(self, mac_address):
         """Try to pair with a device by mac address."""
         try:
-            out = self.get_output("pair " + mac_address, 4)
+            out = self.get_output("pair {}".format(mac_address.upper()), 4)
         except BluetoothctlError as e:
             print(e)
             return None
@@ -149,7 +149,7 @@ class Bluetoothctl:
     def remove(self, mac_address):
         """Remove paired device by mac address, return success of the operation."""
         try:
-            out = self.get_output("remove {}".format(mac_address), 3)
+            out = self.get_output("remove {}".format(mac_address.upper()), 3)
         except BluetoothctlError as e:
             print(e)
             return None
@@ -161,12 +161,24 @@ class Bluetoothctl:
     def connect(self, mac_address):
         """Try to connect to a device by mac address."""
         try:
-            out = self.get_output("connect " + mac_address, 2)
+            out = self.get_output("connect {}".format(mac_address.upper()), 2)
         except BluetoothctlError as e:
             print(e)
             return None
         else:
             res = self.child.expect(["Failed to connect", "Connection successful", pexpect.EOF], timeout=1)
+            success = True if res == 1 else False
+            return success
+
+    def trust(self, mac_address):
+        """Try to trust a device by mac address."""
+        try:
+            out = self.get_output("trust {}".format(mac_address.upper()), 2)
+        except BluetoothctlError as e:
+            print(e)
+            return None
+        else:
+            res = self.child.expect(["Failed to trust", "Trust successful", pexpect.EOF], timeout=1)
             success = True if res == 1 else False
             return success
 

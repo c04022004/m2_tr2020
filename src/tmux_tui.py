@@ -11,7 +11,7 @@ import pexpect
 import libtmux
 import atexit
 
-from ds4_names import DS4_NAME_TO_MAC
+from ds4_names import DS4_NAME_TO_MAC, DS4_NAMES
 
 class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
@@ -47,11 +47,11 @@ class connectButton(npyscreen.ButtonPress):
             self.set_status('Error', 'Choose a ds4 device first')
             time.sleep(0.5)
             return
-        if ds4_name == 'input/js0':
+        if ds4_name.startswith('input/js'):
             self.set_status('Error', 'input/js0 is already connected')
             time.sleep(0.5)
             return
-        mac_addr = DS4_NAME_TO_MAC[ds4_name]
+        mac_addr = DS4_NAME_TO_MAC[ds4_name].upper()
         self.set_status('Connection in progress...', 'Target device: %s (%s)\nRemoving it from inventory and acquire it again. ' % (ds4_name, mac_addr))
         time.sleep(1)
         # Removing the target and reconnect
@@ -66,7 +66,7 @@ class connectButton(npyscreen.ButtonPress):
 
         paired = False
         attempts = 0
-        MAX_ATTEMPTS=5
+        MAX_ATTEMPTS=10
         while not paired and attempts < MAX_ATTEMPTS:
             attempts += 1
             self.set_status('Connection in progress', 'Scan and attempt to pair\nAttempt {}/{}\nPress ps+share on your DualShock4 until it blinks quickly...'.format(attempts, MAX_ATTEMPTS))
@@ -96,7 +96,15 @@ class connectButton(npyscreen.ButtonPress):
             time.sleep(1)
             return
 
-        self.set_status('Connection Finished', 'Done')
+        self.set_status('Connected', 'Setting as trusted')
+        try:
+            self.bl.trust(mac_addr)
+        except bluetoothctl.BluetoothctlError as e:
+            print(e)
+        except pexpect.exceptions.TIMEOUT:
+            pass
+
+        self.set_status('Connected', 'Connection complete')
         time.sleep(1)
         return
 
@@ -239,17 +247,21 @@ class MainForm(npyscreen.ActionFormV2):
             max_width=70, rely=_rely,
         )
         _rely += 3
+        def ds4_names_and_js():
+            for (k, _) in DS4_NAMES:
+                yield k
+            for ctr in range(0, 10):
+                yield "input/js{}".format(ctr)
         self.ds4_name = self.add(npyscreen.TitleSelectOne,
-            scroll_exit=True, name='Joystick name', 
-            values = ['ds4red', 'ds4blue', 'ds4black', 'ds4white',
-                    'ds4orange', 'ds4navy', 'ds4berry', 'input/js0'],
-            max_width=40, max_height=9, rely=_rely+2,
+            scroll_exit=True, name='Joystick name',
+            values = list(ds4_names_and_js()),
+            max_width=40, max_height=15, rely=_rely+2,
         )
         # _rely += 1
+        self.list_ds4 = self.add(ListDs4Button, name="List DS4 devices", max_height=1, relx=0, rely=_rely)
         self.btn = self.add(connectButton, name="DualShock4 Connection Wizard",
-            max_height=1, relx=0, rely=_rely, ds4_name=self.ds4_name,
+            max_height=1, relx=0, rely=_rely + 1, ds4_name=self.ds4_name,
         )
-        self.list_ds4 = self.add(ListDs4Button, name="List DS4 devices", max_height=1, relx=0, rely=_rely+1)
 
         _relx += 42
         _rely += 2
