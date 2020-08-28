@@ -18,15 +18,22 @@ class BluetoothctlError(Exception):
 class Bluetoothctl:
     """A wrapper for bluetoothctl utility."""
 
-    def __init__(self):
+    def __init__(self, logger = None):
         try:
             out = subprocess.check_output("rfkill unblock bluetooth", shell = True)
         except Exception as e:
             print("rfkill error: %s"%e)
         self.child = pexpect.spawn("bluetoothctl", echo = False)
+        self.logger = logger
+        if self.logger is None:
+            def default_logger(m):
+                print("[bluetoothctl] {}".format(m))
+            self.logger = default_logger
 
     def get_output(self, command, pause = 0):
         """Run a command in bluetoothctl prompt, return output as a list of lines."""
+        self.logger("Send command: {}".format(command))
+
         self.child.send(command + "\n")
         time.sleep(pause)
         start_failed = self.child.expect(["bluetooth", "Wireless Controller", pexpect.EOF])
@@ -35,6 +42,10 @@ class Bluetoothctl:
             raise BluetoothctlError("Bluetoothctl failed after running " + command)
 
         out = self.child.before.split(b"\r\n")
+
+        for line in out:
+            self.logger("[stdout] {}".format(line))
+
         return out
 
     def start_scan(self):
@@ -42,7 +53,7 @@ class Bluetoothctl:
         try:
             out = self.get_output("scan on")
         except BluetoothctlError as e:
-            print(e)
+            self.logger(e)
             return None
 
     def make_discoverable(self):
@@ -126,7 +137,7 @@ class Bluetoothctl:
     def pair(self, mac_address):
         """Try to pair with a device by mac address."""
         try:
-            out = self.get_output("pair " + mac_address, 4)
+            out = self.get_output("pair {}".format(mac_address.upper()), 4)
         except BluetoothctlError as e:
             print(e)
             return None
@@ -138,7 +149,7 @@ class Bluetoothctl:
     def remove(self, mac_address):
         """Remove paired device by mac address, return success of the operation."""
         try:
-            out = self.get_output("remove {}".format(mac_address), 3)
+            out = self.get_output("remove {}".format(mac_address.upper()), 3)
         except BluetoothctlError as e:
             print(e)
             return None
@@ -150,12 +161,24 @@ class Bluetoothctl:
     def connect(self, mac_address):
         """Try to connect to a device by mac address."""
         try:
-            out = self.get_output("connect " + mac_address, 2)
+            out = self.get_output("connect {}".format(mac_address.upper()), 2)
         except BluetoothctlError as e:
             print(e)
             return None
         else:
             res = self.child.expect(["Failed to connect", "Connection successful", pexpect.EOF], timeout=1)
+            success = True if res == 1 else False
+            return success
+
+    def trust(self, mac_address):
+        """Try to trust a device by mac address."""
+        try:
+            out = self.get_output("trust {}".format(mac_address.upper()), 2)
+        except BluetoothctlError as e:
+            print(e)
+            return None
+        else:
+            res = self.child.expect(["Failed to trust", "Trust successful", pexpect.EOF], timeout=1)
             success = True if res == 1 else False
             return success
 
