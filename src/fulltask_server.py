@@ -149,7 +149,11 @@ class FulltaskSceneHandler(object):
     
     def as_state_decode(self, state, action_name):
         states = ["PENDING", "ACTIVE", "PREEMPTED", "SUCCEEDED", "ABORTED", "REJECTED", "PREEMPTING", "RECALLING", "RECALLED", "LOST"]
-        rospy.logwarn("%s goal done: State=%d %s"%(action_name, state, states[state]))
+        if states[state] not in ["PENDING", "ACTIVE", "SUCCEEDED"]:
+            rospy.logwarn("%s goal done: State=%d %s"%(action_name, state, states[state]))
+        else:
+            rospy.loginfo("%s goal done: State=%d %s"%(action_name, state, states[state]))
+
 
     def as_preempt_cb(self): # only called when the goal is cancelled externally outisde of this node (e.g. publishing to tr_server/cancel)
         rospy.logwarn("fulltask goal preempt request")
@@ -202,12 +206,13 @@ class FulltaskSceneHandler(object):
         pass
 
     def icp_decode(self, msg):
-        icp_estimate = (msg.estimated_pose.position.x, msg.estimated_pose.position.y)
-        ref_odom     = (msg.original_pose.position.x, msg.original_pose.position.y)
-        error_metric =  msg.mae
-        rospy.loginfo("icp: (%.2f,%.2f) -> (%.2f,%.2f), mae: %.2f"%
-            (icp_estimate[0], icp_estimate[1], ref_odom[0], ref_odom[1], error_metric))
-        return icp_estimate, ref_odom, error_metric
+        icp_estimate  = {'x': msg.estimated_pose.position.x, 'y':msg.estimated_pose.position.y}
+        ref_odom      = {'x': msg.original_pose.position.x, 'y':msg.original_pose.position.y}
+        error_metrics = {'mae': msg.mae, "rmse": msg.rmse}
+        rospy.loginfo("icp: (%.2f,%.2f) -> (%.2f,%.2f), mae: %.4f rmse: %.4f"%
+            (icp_estimate['x'], icp_estimate['y'], ref_odom['x'], ref_odom['y'],
+            error_metrics['mae'], error_metrics['rmse'],))
+        return icp_estimate, ref_odom, error_metrics
 
     def do_try(self):
         if robot_type == ROBOT_NONE:
@@ -219,9 +224,14 @@ class FulltaskSceneHandler(object):
             return
         try:
             response = self.icp_srv()
-            self.icp_decode(response)
-            # self.set_x_pub.publish(adjusted_pose.estimated_pose.position.x)
-            # self.set_y_pub.publish(adjusted_pose.estimated_pose.position.y)
+            icp_estimate, ref_odom, error_metrics = self.icp_decode(response)
+            # Sanity Check before setting odom
+            dist = np.hypot(icp_estimate['x']-ref_odom['x'],icp_estimate['y']-ref_odom['y'])
+            if dist<0.2 and error_metrics['mae'] < 0.01 and error_metrics['rmse'] < 0.01:
+                self.set_x_pub.publish(icp_estimate['x'])
+                self.set_y_pub.publish(icp_estimate['y'])
+            else:
+                rospy.logwarn("Cannot pass SAN check, skip renewing odom!!")
             self.try_event.clear()
             self.try_event.wait(0.5) # Wait for the PID to correct the position
             if self.as_check_preempted(): return
@@ -277,9 +287,7 @@ class FulltaskSceneHandler(object):
         try:
             self.command_pr_srv(command)
         except rospy.ServiceException as e:
-            pass
-            # rospy.logerr(e)
-            # rospy.logerr("wireless_comm service unavailable!")
+            pass # rospy.logerr(e) or rospy.logerr("wireless_comm service unavailable!")
 
     def process_hooks(self, hook_list):
         if hook_list == None:
