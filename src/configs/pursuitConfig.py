@@ -11,12 +11,12 @@ POINT_S = (0.5, 9.5)
 POINT_A = (0.8, 0.48)   # 1st ball pass (to TS3)
 POINT_B = (0.92, 3.2)   # 2nd ball pass (to TS2)
 POINT_C = (1.12, 3.7)   # 3rd ball pass (to TS1)
-POINT_D = (0.92, 4.5)   # 4th ball pass (to TS4)
-POINT_E = (0.92, 5.3)   # 5th ball pass (to TS5)
+POINT_D = (0.92, 4.5)   # 5th ball pass (to TS5
+POINT_E = (0.92, 5.3)   # 4th ball pass (to TS4)
 
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
-tryx_offset = 0.075 # reserve for overshoot
+tryx_offset = 0.05 # reserve for overshoot
 POINT_1 = (5.81-tryx_offset, 3.09+0.5*0.03+0*1.3)
 POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
 POINT_3 = (5.81-tryx_offset, 3.09+2.0*0.03+2*1.3)
@@ -288,7 +288,7 @@ for i in range(1,6):
 
 # Setup mode transition criteria
 cfg['try_pid_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)
-cfg['rec_pid_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres=0.90)
+cfg['rec_pid_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres= 0.90)
 cfg['mode_trig']    = BreakTrigger(thres=0.90)
 cfg['default_trig'] = BreakTrigger(thres=0.99)
 
@@ -331,7 +331,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 1",},
-                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
+                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_PT_E]}],
                  'cfg_name'  : 'scene1_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
@@ -360,7 +360,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{"do_try":None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 2",},
-                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
+                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_PT_C]}],
                  'cfg_name'  : 'scene2_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
@@ -389,7 +389,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 3",},
-                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_DIRECT]}],
+                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_PT_B]}],
                  'cfg_name'  : 'scene3_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.1},
@@ -418,7 +418,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 4",},
-                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
+                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_PT_D]}],
                  'cfg_name'  : 'scene4_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
@@ -435,29 +435,19 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
 
 try5_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene5_f',
-                 'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
+                 'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.8},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 5",},
                 {'hook_func' : [{'hook1':None}],
                  'cfg_name'  : 'scene5_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.45, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':MAX_SPEED*0.40, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts5_trig',
                  'log_msg'   : "breaking stage before Try Spot 5",},
                 {'hook_func' : [{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 5",},
-                {'hook_func' : [{'comm_pr_try_done':[CAN_CLIP_SLANT]}],
-                 'cfg_name'  : 'scene5_b',
-                 'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
-                 'trig_name' : 'rec_pid_trig',
-                 'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None}],
-                 'cfg_name'  : 'scene5_bs',
-                 'trig_name' : 'default_trig',
-                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
-                 'log_msg'   : "pid into receiving pos",},
+                None, None,
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
@@ -471,7 +461,7 @@ cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_E[0],'dest_y'
 
 for i in range(1,6):
     try_param = globals()['try%d_param'%i]
-    if cfg[try_param[3]['cfg_name']] != None:
+    if try_param[3] != None and cfg[try_param[3]['cfg_name']] != None:
         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_A:
             try_param[4]['trig_name'] = "rec_ptA_trig"
         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_B:

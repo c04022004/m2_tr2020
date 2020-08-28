@@ -105,12 +105,12 @@ def ps4_cb(ps4_data): # update ps4 data
         global_vel_y = 0.0
         global_vel_z = 0.0
         if match_color == MATCH_RED:
-            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**2.0*max_linear_speed, ps4_data.hat_ly)
-            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**2.0*max_linear_speed, ps4_data.hat_lx)
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx)
             global_vel_z = ps4_data.hat_rx*max_rotational_speed
         elif match_color == MATCH_BLUE:
-            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**2.0*max_linear_speed, ps4_data.hat_ly*-1)
-            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**2.0*max_linear_speed, ps4_data.hat_lx*-1)
+            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly*-1)
+            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx*-1)
             global_vel_z = ps4_data.hat_rx*max_rotational_speed
 
         twist = Twist()
