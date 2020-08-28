@@ -13,22 +13,42 @@ class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
         super(connectButton, self).__init__(*args, **keywords)
         self.ds4_name=keywords['ds4_name']
-        self.bl = bluetoothctl.Bluetoothctl()
+        self.logger_queue = []
+        self.bl = bluetoothctl.Bluetoothctl(self.push_log)
+
+    def set_status(self, title, status):
+        self.logger_title = title
+        self.logger_status = status
+        self.flush_npyscreen_notify()
+
+    def push_log(self, message):
+        for line in message.split("\n"):
+            self.logger_queue.append(message)
+        LOG_SIZE = 5
+        while len(self.logger_queue) > LOG_SIZE:
+            self.logger_queue.pop(0)
+        self.flush_npyscreen_notify()
+
+    def flush_npyscreen_notify(self):
+        msg = "{}\n===\n".format(self.logger_status)
+        for log in self.logger_queue:
+            msg += "\n"
+            msg += log
+        npyscreen.notify(msg, title=self.logger_title, wide=True)
 
     def whenPressed(self):
         # Example device ds4berry
         ds4_name = next(iter(self.ds4_name.get_selected_objects()), None)
         if ds4_name is None:
-            npyscreen.notify('Choose a ds4 device first', title='Error')
+            self.set_status('Error', 'Choose a ds4 device first')
             time.sleep(0.5)
             return
         if ds4_name == 'input/js0':
-            npyscreen.notify('input/js0 is already connected', title='Error')
+            self.set_status('Error', 'input/js0 is already connected')
             time.sleep(0.5)
             return
         mac_addr = DS4_NAME_TO_MAC[ds4_name]
-        # npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. '%mac_addr, title='Connection in progress...')
-        npyscreen.notify('Target device: %s\nRemoving it from inventory and acquire it again. ' % ds4_name, title='Connection in progress...')
+        self.set_status('Connection in progress...', 'Target device: %s (%s)\nRemoving it from inventory and acquire it again. ' % (ds4_name, mac_addr))
         time.sleep(1)
         # Removing the target and reconnect
         try:
@@ -45,7 +65,7 @@ class connectButton(npyscreen.ButtonPress):
         MAX_ATTEMPTS=5
         while not paired and attempts < MAX_ATTEMPTS:
             attempts += 1
-            npyscreen.notify('Scan and attempt to pair\nAttempt {}/{}\nPress ps+share on your DualShock4 until it blinks quickly...'.format(attempts, MAX_ATTEMPTS), title='Connection in progress...')
+            self.set_status('Connection in progress', 'Scan and attempt to pair\nAttempt {}/{}\nPress ps+share on your DualShock4 until it blinks quickly...'.format(attempts, MAX_ATTEMPTS))
             try:
                 paired = self.bl.pair(mac_addr)
             except bluetoothctl.BluetoothctlError as e:
@@ -53,11 +73,11 @@ class connectButton(npyscreen.ButtonPress):
             except pexpect.exceptions.TIMEOUT:
                 pass
         if not paired:
-            npyscreen.notify('Connection timed out... Please try again', title='Error')
+            self.set_status('Error', 'Connection timed out... Please try again')
             time.sleep(1)
             return
 
-        npyscreen.notify('Negotiating the remaning stuffs, keep the DS4 in alive...', title='Connection in progress...')
+        self.set_status('Connection in progress', 'Negotiating the remaning stuffs, keep the DS4 in alive...')
         paired = False
         attempts = 0
         while not paired and attempts<5:
@@ -68,11 +88,11 @@ class connectButton(npyscreen.ButtonPress):
             except pexpect.exceptions.TIMEOUT:
                 pass
         if not paired:
-            npyscreen.notify('Connection timed out... Please try again', title='Error')
+            self.set_status('Error', 'Connection timed out... Please try again')
             time.sleep(1)
             return
 
-        npyscreen.notify('Done.', title='Connection Finished')
+        self.set_status('Connection Finished', 'Done')
         time.sleep(1)
         return
 
