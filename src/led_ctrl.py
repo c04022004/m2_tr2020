@@ -9,7 +9,7 @@ import time
 
 def odom_cb(odom):
     TEAM_PUBLISHER.publish(data=True)
-    if max(odom.pose.covariance) >= 1000:
+    if max(odom.pose.covariance) > 100:
         # detected pose error
         sec_trunc = time.time() % 1.0
         INVERT_PUBLISHER.publish(data=sec_trunc >= 0.5)
