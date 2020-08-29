@@ -9,7 +9,6 @@ import time
 
 def odom_cb(odom):
     TEAM_PUBLISHER.publish(data=True)
-    rospy.loginfo("max odom pose covariance: {}".format(max(odom.pose.covariance)))
     if max(odom.pose.covariance) >= 1000:
         # detected pose error
         sec_trunc = time.time() % 1.0
@@ -39,7 +38,6 @@ if __name__ == "__main__":
     chassis_odom_topic = rospy.get_param("~chassis_odom_topic", "chassis_odom")
     rospy.Subscriber(chassis_odom_topic, Odometry, odom_cb)
 
-    rospy.loginfo("team_color_topic: {}".format(team_color_topic()))
     TEAM_PUBLISHER = rospy.Publisher(team_color_topic(), Bool, queue_size=1)
     INVERT_PUBLISHER = rospy.Publisher(team_color_topic(invert=True), Bool, queue_size=1)
 
