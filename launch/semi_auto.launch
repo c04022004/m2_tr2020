@@ -3,6 +3,7 @@
     <arg name = "team"/>
     <arg name = "color"/>
     <arg name = "manual_vel"/>
+    <arg name="chassis_odom_topic" default="chassis_odom" />
 
     <include file = "$(find m2_ps4)/launch/ps4_msg.launch">
         <arg name = "joy" value="$(arg joy)"/>
@@ -41,6 +42,16 @@
         output = "screen"
         respawn = "true"
         if="$(eval team == 'rtx')">
+    </node>
+
+    <node name = "led_ctrl"
+        pkg = "m2_tr2020"
+        type = "led_ctrl.py"
+        output = "screen"
+        respawn = "true">
+        <param name="team" type="str" value="$(arg team)" />
+        <param name="color" type="str" value="$(arg color)" />
+        <param name="chassis_odom_topic" type="str" value="$(arg chassis_odom_topic)" />
     </node>
 
 </launch>
