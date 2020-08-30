@@ -66,7 +66,7 @@ class connectButton(npyscreen.ButtonPress):
 
         paired = False
         attempts = 0
-        MAX_ATTEMPTS=10
+        MAX_ATTEMPTS=5
         while not paired and attempts < MAX_ATTEMPTS:
             attempts += 1
             self.set_status('Connection in progress', 'Scan and attempt to pair\nAttempt {}/{}\nPress ps+share on your DualShock4 until it blinks quickly...'.format(attempts, MAX_ATTEMPTS))
@@ -115,7 +115,7 @@ class ListDs4Button(npyscreen.ButtonPress):
     def whenPressed(self):
         files = list(map(lambda x: x[5:], iter(glob.glob('/dev/ds4*'))))
 
-        for ctr in range(0, 10):
+        for ctr in range(0, 4):
             path = '/dev/input/js{}'.format(ctr)
             if os.path.exists(path):
                 mac = detect_mac(path)
@@ -255,7 +255,7 @@ class MainForm(npyscreen.ActionFormV2):
         def ds4_names_and_js():
             for (k, _) in DS4_NAMES:
                 yield k
-            for ctr in range(0, 10):
+            for ctr in range(0, 4):
                 yield "input/js{}".format(ctr)
         self.ds4_name = self.add(npyscreen.TitleSelectOne,
             scroll_exit=True, name='Joystick name',
@@ -319,17 +319,17 @@ def exit_handler():
         panes=window.list_panes()
         for pane_id in range(len(panes))[::-1]:
             # i=len(panes)-i-1
-            for i in range(10):
+            for i in range(4):
                 panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
                 time.sleep(0.02)
-            for i in range(10):
+            for i in range(4):
                 panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
                 time.sleep(0.02)
-            time.sleep(0.25)
-            for i in range(10):
+            time.sleep(0.1)
+            for i in range(4):
                 panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
                 time.sleep(0.02)
-            time.sleep(0.5)
+            time.sleep(0.1)
             if pane_id > 0:
                 panes[pane_id].send_keys("exit")
     except libtmux.exc.LibTmuxException as e:
