@@ -161,17 +161,27 @@ class tmux_helper(object):
         panes = w.list_panes()
         panes[2].send_keys('killall -9 rosmaster', enter=True, suppress_history=False)
         panes[2].send_keys('roscore', enter=True, suppress_history=False)
-        time.sleep(5)
-        panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
-        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
-        panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
+
+        for i in range(25):
+            time.sleep(0.2)
+            text = panes[2].capture_pane()
+            if "started core service [/rosout]" in text:
+                break
+        time.sleep(0.25)
 
         if team == "rx":
             panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
         elif team == "rtx":
             panes[4].send_keys('roslaunch m2_tr2020 base_hw_djimotor.launch', suppress_history=False)
+        time.sleep(1.0)
 
-        # panes[0].send_keys(l[0])
+        panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
+        time.sleep(1.0)
+
+        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
+        time.sleep(1.0)
+
+        panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
     
     def relaunch(self, pane_id):
         s = self.find_session()
