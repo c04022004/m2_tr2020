@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 import rospy, time, threading
+from tf import transformations
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from actionlib_msgs.msg import GoalID
-from std_srvs.srv import Trigger, SetBool
+from std_srvs.srv import Trigger, SetBool, SetBoolRequest
 from m2_chassis_utils.msg import ChannelTwist
-from m2_ps4.msg import Ps4Data, RgbTime
+from m2_ps4.msg import Ps4Data, RgbTime, FfTime
 from m2_ps4.srv import SetRgb, SetRgbRequest
 from std_msgs.msg import Bool
 from m2_tr2020.msg import *
@@ -39,6 +41,9 @@ NO_MOTOR = 5
 
 # Motor enable state
 motor_en = True
+
+# Odom position
+odom_pos = None
 
 def slider_cb(msg):
     global slider_pos
@@ -77,6 +82,19 @@ def cancel_all_action():
     if robot_type == ROBOT_TR2:
         dji_cancel_pub.publish(GoalID())
 
+def odom_cb(odom_msg):
+    global odom_pos
+    if odom_pos == None:
+        odom_pos = {}
+    odom_pos["x"] = odom_msg.pose.pose.position.x
+    odom_pos["y"] = odom_msg.pose.pose.position.y
+    quaternion = (
+        odom_msg.pose.pose.orientation.x,
+        odom_msg.pose.pose.orientation.y,
+        odom_msg.pose.pose.orientation.z,
+        odom_msg.pose.pose.orientation.w)
+    odom_pos["z"] = transformations.euler_from_quaternion(quaternion)[2]
+
 def ps4_cb(ps4_data): # update ps4 data
     global direct,old_data,control_mode,motor_en
     if ps4_data.l2 and ps4_data.r2:
@@ -105,9 +123,23 @@ def ps4_cb(ps4_data): # update ps4 data
         global_vel_y = 0.0
         global_vel_z = 0.0
         if match_color == MATCH_RED:
+            # non-linear control
             global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly)
             global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx)
             global_vel_z = ps4_data.hat_rx*max_rotational_speed
+            # limit the vel by odom_pos
+            # ff_req = SetBoolRequest(False)
+            # if odom_pos != None:
+            #     if odom_pos["x"] > 1.5-0.6:
+            #         global_vel_x = min(0.1,global_vel_x)
+            #         ff_req = SetBoolRequest(True)
+            #     if odom_pos["x"] < 0.6:
+            #         global_vel_x = max(-0.1,global_vel_x)
+            #         ff_req = SetBoolRequest(True)
+            #     try:
+            #         ps4_rumble_srv(ff_req)
+            #     except (rospy.ServiceException, rospy.ROSException) as e:
+            #         rospy.logerr_throttle(10,"/set_ff call failed")
         elif match_color == MATCH_BLUE:
             global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly*-1)
             global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx*-1)
@@ -232,8 +264,10 @@ vel_pub = rospy.Publisher('/chan_cmd_vel', ChannelTwist, queue_size = 1)
 tr_cancel_pub = rospy.Publisher('/tr_server/cancel', GoalID, queue_size = 1)
 sw_cancel_pub = rospy.Publisher('/Switch/cancel', GoalID, queue_size = 1)
 dji_cancel_pub = rospy.Publisher('/dji_try_server/cancel', GoalID, queue_size = 1)
+odom_sub = rospy.Subscriber("chassis_odom",Odometry,odom_cb)
 ps4_sub = rospy.Subscriber('input/ps4_data', Ps4Data, ps4_cb)
 ps4_led_srv = rospy.ServiceProxy('/set_led', SetRgb)
+ps4_rumble_srv = rospy.ServiceProxy('/set_rumble', SetBool)
 
 # tr1/pneumatic
 io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1)
