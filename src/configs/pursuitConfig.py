@@ -237,8 +237,10 @@ class BreakTrigger:
             self.field_color = color
     
     def positionFlipX(self):
-        self.x_min = 13.3 - self.x_min
-        self.x_max = 13.3 - self.x_max
+        if self.x_min!= None:
+            self.x_min = 13.3 - self.x_min
+        if self.x_max!= None:
+            self.x_max = 13.3 - self.x_max
         self.x_min,self.x_max = self.x_max,self.x_min
 
     def getTriggers(self):
