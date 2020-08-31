@@ -123,6 +123,21 @@ class ListDs4Button(npyscreen.ButtonPress):
 
         npyscreen.notify_wait("Connected devices: {}".format(files if len(files) > 0 else "None"))
 
+class ProperSlider(npyscreen.Slider):
+    def __init__(self, *args, **keywords):
+        super(ProperSlider, self).__init__(*args, **keywords)
+    
+    def translate_value(self):
+        stri = "%.1f / %.1f" %(self.value, self.out_of)
+        if isinstance(stri, bytes):
+            stri = stri.decode(self.encoding, 'replace')
+        l = len("%.1f"%1)*2+4
+        stri = stri.rjust(l)
+        return stri
+
+class ProperTitleSider(npyscreen.TitleText):
+    _entry_type = ProperSlider
+
 DEVNULL = open(os.devnull, 'wb')
 
 def detect_mac(file):
@@ -201,37 +216,6 @@ class tmux_helper(object):
         panes[pane_id].enter()
         # panes[pane_id].send_keys(self.commands[pane_id], enter=True, suppress_history=False)
 
-# class ds4Box(npyscreen.BoxTitle):
-#     def make_contained_widget(self, contained_widget_arguments=None):
-#         self._my_widgets = []
-#         _rely = self.rely+2
-#         _relx = self.relx+2
-#         self._my_widgets.append(connectButton(self.parent,
-#             name="Connect Wizard",
-#             rely=_rely, relx = _relx,
-#             max_width=self.width-4,max_height=1,
-#         ))
-#         _rely+=2
-#         self._my_widgets.append(npyscreen.TitleSelectOne(self.parent,
-#             name='Joystick name', scroll_exit=True,
-#             rely=_rely, relx = _relx,
-#             max_width=self.width-4,max_height=5,
-#             values = ['ds4red', 'ds4blue', 'ds4black', 'ds4white',
-#                     'ds4orange', 'ds4navy', 'ds4berry', 'default(js0)']
-#         ))
-#         self.entry_widget = weakref.proxy(self._my_widgets[0])
-
-#     def update(self, clear=True):
-#         if self.hidden and clear:
-#             self.clear()
-#             return False
-#         elif self.hidden:
-#             return False
-#         super(ds4Box, self).update(clear=clear)
-#         for w in self._my_widgets:
-#             w.update(clear=clear)
-#             w.edit()
-
 class MyTmuxApp(npyscreen.NPSAppManaged):
     def onStart(self):
         npyscreen.setTheme(npyscreen.Themes.BlackOnWhiteTheme)
@@ -252,13 +236,13 @@ class MainForm(npyscreen.ActionFormV2):
 
         _relx, _rely = int(0), int(0)
         _rely += 2
-        self.auto_vel = self.add(npyscreen.TitleSlider, name="Auto MAX speed:",
+        self.auto_vel = self.add(ProperTitleSider, name="Auto MAX speed:",
             value=4.5, out_of=5.5, lowest=2.0, step=0.1, 
             max_width=70, rely=_rely,
         )
         _rely += 3
-        self.manual_vel = self.add(npyscreen.TitleSlider, name="Manual MAX speed:",
-            value=1.2, out_of=5.5, lowest=1.2, step=0.1,
+        self.manual_vel = self.add(ProperTitleSider, name="Manual MAX speed:",
+            value=2.5, out_of=5.5, lowest=1.2, step=0.1,
             max_width=70, rely=_rely,
         )
         _rely += 3
