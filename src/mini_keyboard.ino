@@ -1,26 +1,94 @@
-/**************************************************************************
- This is an example for our Monochrome OLEDs based on SSD1306 drivers
-
- Pick one up today in the adafruit shop!
- ------> http://www.adafruit.com/category/63_98
-
- This example is for a 128x32 pixel display using I2C to communicate
- 3 pins are required to interface (two I2C and one reset).
-
- Adafruit invests time and resources providing this open
- source code, please support Adafruit and open-source
- hardware by purchasing products from Adafruit!
-
- Written by Limor Fried/Ladyada for Adafruit Industries,
- with contributions from the open source community.
- BSD license, check license.txt for more information
- All text above, and the splash screen below must be
- included in any redistribution.
- **************************************************************************/
-
+#include <DebounceEvent.h>
+#include <Keyboard.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+
+//---  START prototypes   ---
+void normal_layout(uint8_t pin);
+void tmux_layout(uint8_t pin);
+void command_layout(uint8_t pin);
+
+void arrow_up();
+void arrow_down();
+void arrow_left();
+void arrow_right();
+void spacebar();
+void enter();
+void ctrl_b();
+void ctrl_c();
+void ctrl_d();
+void m2_command();
+void tmux_command();
+void ctrl_alt_f1();
+void ctrl_alt_f2();
+void ctrl_alt_f3();
+void python_command();
+void nothing(); //it is not used, handled in callback
+void page_up();
+void page_down();
+void launch_tr();
+
+//---   END prototypes   ---
+
+
+//---   START store   ---
+typedef void (*function_ptr)();
+
+struct keyType {
+  char symbol[2];
+  function_ptr function;   //15,0,4,8,15, 2,1,3,7,5
+};
+
+#define key_count 20
+//!!!!!! all keys display characters and functions stored here, value assignment in setup()
+keyType* key = new keyType[key_count]; 
+keyType* mykeys = new keyType[10]; // all the 10 keys of the current mode
+//store display layout in this array (2 characters for each key, 10 keys)
+char keySymbol[key_count][2] = {
+  {24, ' ' }, {25, ' '}, {27, ' '}, {26, ' '}, {95, ' '},
+  {'E', 'n'}, {94, 'B'}, {94, 'C'}, {94, 'D'}, {'m','2'},
+  {'T', 'm'}, {'F','1'}, {'F','2'}, {'F','3'}, {'P','y'},
+  {240, ' '}, {219,' '}, {'P','U'}, {'P','D'}, {'U','I'}};
+//store key functions in this array
+void (*keyFunction[key_count])() = {
+  arrow_up, arrow_down, arrow_left, arrow_right, spacebar,
+  enter, ctrl_b, ctrl_c, ctrl_d, m2_command,
+  tmux_command, ctrl_alt_f1, ctrl_alt_f2, ctrl_alt_f3, python_command,
+  nothing, nothing, page_up, page_down, launch_tr};
+//---   END store   ---
+
+
+// ------ START buttons library ------
+
+#define NUM_BUTTONS 10
+
+#define BUTTON_R1C1 9
+#define BUTTON_R1C2 A2
+#define BUTTON_R1C3 A1
+#define BUTTON_R1C4 A0
+#define BUTTON_R1C5 10
+
+#define BUTTON_R2C1 4
+#define BUTTON_R2C2 5
+#define BUTTON_R2C3 6
+#define BUTTON_R2C4 7
+#define BUTTON_R2C5 8
+
+byte buttons[NUM_BUTTONS] = {BUTTON_R1C1, BUTTON_R1C2, BUTTON_R1C3, BUTTON_R1C4, BUTTON_R1C5,
+                             BUTTON_R2C1, BUTTON_R2C2, BUTTON_R2C3, BUTTON_R2C4, BUTTON_R2C5
+                            };
+byte button_convertion[32] = {0};
+
+DebounceEvent* button_events[NUM_BUTTONS];
+#define CUSTOM_REPEAT_DELAY     0 // waits for 2nd click, set 0 to disable double clicks
+#define CUSTOM_DEBOUNCE_DELAY   50
+
+// ------ END buttons library ------
+
+// ------ START OLED display library ------
+
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
@@ -29,648 +97,414 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// ------ END OLED display library ------
 
+
+// ------ START Keyboard library ------
 #include "Keyboard.h"
 
 enum layout {
-  NORMAL=0,
+  NORMAL = 0,
   TMUX,
-  TMUX_PANE,
-  TERM,
-  FUNCT,
-  PANIC
+  COMMAND
 };
-layout kbl = 0;
-bool tmux_func = false;
-
-#include <DebounceEvent.h>
-#define BUTTON_V0 16
-#define BUTTON_V1 14
-#define BUTTON_V2 9
-#define BUTTON_H0 8
-#define BUTTON_H1 7
-#define BUTTON_H2 6
-#define BUTTON_H3 5
-#define BUTTON_H4 4
+layout kbl = 0; //kbl is the mode
 
 
-void key_cb(uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
-  if(pin==BUTTON_V0){ // do mode switch on press
-    if(event==2){
-      kbl=kbl+1;kbl=kbl>PANIC?NORMAL:kbl;
-    }else if(event==3 && count == 1 && length>250){
-      kbl=NORMAL;
-    }
-    tmux_func=false;displayfucn();
-  }
+// ------ END Keyboard library ------
 
-  // norm_left
-  if(kbl==NORMAL){
-    switch(pin){
-      case BUTTON_V1:
-        if(event==2){ // do 'space' on press
-          Keyboard.press(' ');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_V2:
-        if(event==2){
-          // do TAB on press
-          // Keyboard.press(KEY_TAB);display.invertDisplay(true);
-          // delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          // do ^C on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('c');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-    }
-  }
-  // tumx_left
-  if(kbl==TMUX||kbl==TERM||kbl==TMUX_PANE){
-    switch(pin){
-      case BUTTON_V1:
-        if(event==2){ // do ^D on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('d');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_V2:
-        if(event==2){ // do ^C on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('c');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-    }
-  }
-  // funct left
-  if(kbl==FUNCT){
-    switch(pin){
-      case BUTTON_V1:
-        if(event==2){ // do 'space' on press
-          Keyboard.press(' ');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_V2:
-        if(event==2){ // do ^C on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('c');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-    }
-  }
-  // panic_left
-  if(kbl==PANIC){
-    switch(pin){
-      case BUTTON_V1:
-        if(event==2){ // do 'esc' on press
-          Keyboard.press(KEY_ESC);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_V2:
-        if(event==2){ // do ^C^D*10 on press
-          for(byte i;i<10;i++){
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('c');display.invertDisplay(true);
-            delay(20);Keyboard.releaseAll();display.invertDisplay(false);
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('d');display.invertDisplay(true);
-            delay(20);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-        }
-        break;
-    }
-  }
+void displayfunc();
 
-  // Bottom
-  if(kbl==NORMAL){
-    switch(pin){
-      case BUTTON_H0:
-        if(event==2){ // do ↑ on press
-          Keyboard.press(KEY_UP_ARROW);;display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;     
-      case BUTTON_H1:
-        if(event==2){ // do ↓ on press
-          Keyboard.press(KEY_DOWN_ARROW);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
+void callback(uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
+  Serial.print("Pin : "); Serial.print(button_convertion[pin]);
+  Serial.print(" Event : "); Serial.print(event);
+  Serial.print(" Count : "); Serial.print(count);
+  Serial.print(" Length: "); Serial.print(length);
+  Serial.println();
+  if (button_convertion[pin] == 1) {
+    if (event == 2) {
+      kbl = (kbl + 1) % 3;
+      display.invertDisplay(true); delay(5);
+      display.invertDisplay(false);
+    } else if (event == 3 && count == 1 && length > 250) {
+      kbl = NORMAL;
+    }
+    displayfunc();
+  } else if(event == 2){
+    //key function perform
+    switch (pin) {
+      case BUTTON_R1C1:
+        mykeys[0].function();
         break;
-      case BUTTON_H2:
-        if(event==2){ // do → on press
-          Keyboard.press(KEY_LEFT_ARROW);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
+      case BUTTON_R1C2:
+        mykeys[1].function();
         break;
-      case BUTTON_H3:
-        if(event==2){ // do ← on press
-          Keyboard.press(KEY_RIGHT_ARROW);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
+      case BUTTON_R1C3:
+        mykeys[2].function();
         break;
-      case BUTTON_H4:
-        if(event==2){ // do 'return' on press
-          Keyboard.press(KEY_RETURN);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
+      case BUTTON_R1C4:
+        mykeys[3].function();
+        break;
+      case BUTTON_R1C5:
+        mykeys[4].function();
+        break;
+      case BUTTON_R2C1:
+        mykeys[5].function();
+        break;
+      case BUTTON_R2C2:
+        mykeys[6].function();
+        break;
+      case BUTTON_R2C3:
+        mykeys[7].function();
+        break;
+      case BUTTON_R2C4:
+        mykeys[8].function();
+        break;
+      case BUTTON_R2C5:
+        mykeys[9].function();
+        break;
+      default:
         break;
     }
-  }else if(kbl==TMUX && !tmux_func){
-    switch(pin){
-      case BUTTON_H0:
-        if(event==2){ // do ^B on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;     
-      case BUTTON_H1:
-        if(event==2){ // do another layout
-          tmux_func=true;displayfucn();
-        }
-        break;
-      case BUTTON_H2:
-        if(event==2){ // do esc on press
-          Keyboard.press(KEY_ESC);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H3:
-        if(event==2){ // do PageUp on press
-          Keyboard.press(KEY_PAGE_UP);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H4:
-        if(event==2){ // do PageDown on press
-          Keyboard.press(KEY_PAGE_DOWN);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      }
-    }else if(kbl==TMUX && tmux_func){
-      switch(pin){
-        case BUTTON_H0:
-          if(event==2){ // do ^B+z on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();display.invertDisplay(true);
-            Keyboard.press('z');delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-            tmux_func=false;displayfucn();
-          }
-          break;     
-        case BUTTON_H1:
-          if(event==2){ // do ^B+o on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();display.invertDisplay(true);
-            Keyboard.press('o');delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-            tmux_func=false;displayfucn();
-          }
-          break;
-        case BUTTON_H2:
-          if(event==2){ // do ^B+q on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();display.invertDisplay(true);
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-            tmux_func=false;displayfucn();
-          }
-          break;
-        case BUTTON_H3:
-          if(event==2){ // do ^B+n on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();display.invertDisplay(true);
-            Keyboard.press('n');delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-            tmux_func=false;displayfucn();
-          }
-          break;
-        case BUTTON_H4:
-          if(event==2){ // do ^B+t on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();display.invertDisplay(true);
-            Keyboard.press('t');delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-            tmux_func=false;displayfucn();
-          }
-          break;
-      }
-  }else if(kbl==TMUX_PANE){
-      switch(pin){
-        case BUTTON_H0:
-          if(event==2){ // do ^B+q + 0 on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();
-            Keyboard.press('0');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-          break;     
-        case BUTTON_H1:
-          if(event==2){ // do ^B+q + 1 on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();
-            Keyboard.press('1');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-          break;
-        case BUTTON_H2:
-          if(event==2){ // do ^B+q + 2 on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();
-            Keyboard.press('2');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-          break;
-        case BUTTON_H3:
-          if(event==2){ // do ^B+q + 3 on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();
-            Keyboard.press('4');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-          break;
-        case BUTTON_H4:
-          if(event==2){ // do ^B+q + 4 on press
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('b');
-            delay(10);Keyboard.releaseAll();
-            Keyboard.press('q');delay(10);Keyboard.releaseAll();
-            Keyboard.press('4');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-          break;
-      }
-  }else if(kbl==TERM){
-    switch(pin){
-      case BUTTON_H0:
-        if(event==2){ // do Ctrl+Alt+F1 on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(KEY_LEFT_ALT);
-          Keyboard.press(KEY_F1);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;     
-      case BUTTON_H1:
-        if(event==2){ // do Ctrl+Alt+F2 on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(KEY_LEFT_ALT);
-          Keyboard.press(KEY_F2);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H2:
-        if(event==2){ // do Ctrl+Alt+F7 on press
-          Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(KEY_LEFT_ALT);
-          Keyboard.press(KEY_F7);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H3:
-        if(event==2){ // type "m2" on press
-          Keyboard.print("m2");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H4:
-        if(event==2){ // do 'return' on press
-          Keyboard.press(KEY_RETURN);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-    }
-  }else if(kbl==FUNCT){
-    switch(pin){
-      case BUTTON_H0:
-        if(event==2){ // type '4' on press
-          Keyboard.print("4");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;     
-      case BUTTON_H1:
-        if(event==2){ // type '5' on press
-          Keyboard.print("5");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H2:
-        if(event==2){ // type '6' on press
-          Keyboard.print("6");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H3:
-        if(event==2){ // type "m2" on press
-          Keyboard.press(KEY_BACKSPACE);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H4:
-        if(event==2){ // do 'return' on press
-          Keyboard.press(KEY_RETURN);display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-    }
-  }else if(kbl==PANIC){
-    switch(pin){
-      case BUTTON_H0:
-        if(event==2){ // type 'roscore\n' on press
-          Keyboard.println("roscore");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;     
-      case BUTTON_H1:
-        if(event==2){ // type 'python tr_launch.py\n' on press
-          Keyboard.println("python tr_launch.py");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H2:
-        if(event==2){ // type 'sudo -i' on press
-          Keyboard.println("sudo -i");display.invertDisplay(true);delay(50);
-          Keyboard.println("m2m2m2m2");display.invertDisplay(false);
-          for(byte i;i<2;i++){
-            Keyboard.press(KEY_LEFT_CTRL);Keyboard.press('c');display.invertDisplay(true);
-            delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-          }
-        }
-        break;
-      case BUTTON_H3:
-        if(event==2){ // type 'ip a\n' on press
-          Keyboard.println("ip a");display.invertDisplay(true);
-          delay(10);Keyboard.releaseAll();display.invertDisplay(false);
-        }
-        break;
-      case BUTTON_H4:
-        break;
-    }
-  }
-  if (event==3){
-    Keyboard.releaseAll();
+
   }
 }
 
-DebounceEvent bv0 = DebounceEvent(BUTTON_V0, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bv1 = DebounceEvent(BUTTON_V1, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bv2 = DebounceEvent(BUTTON_V2, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-
-DebounceEvent bh0 = DebounceEvent(BUTTON_H0, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bh1 = DebounceEvent(BUTTON_H1, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bh2 = DebounceEvent(BUTTON_H2, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bh3 = DebounceEvent(BUTTON_H3, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-DebounceEvent bh4 = DebounceEvent(BUTTON_H4, key_cb, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
-
-
 void setup() {
+  // put your setup code here, to run once:
+  //START copy keys symbol and functions into the single array key
+  for (int i; i < key_count; ++i) {
+    key[i].symbol[0] = keySymbol[i][0];
+    key[i].symbol[1] = keySymbol[i][1];
+    key[i].function = keyFunction[i];
+  }
 
+
+  // create the hash table for the buttons
+  button_convertion[BUTTON_R1C1] = 1;
+  button_convertion[BUTTON_R1C2] = 2;
+  button_convertion[BUTTON_R1C3] = 3;
+  button_convertion[BUTTON_R1C4] = 4;
+  button_convertion[BUTTON_R1C5] = 5;
+  button_convertion[BUTTON_R2C1] = 6;
+  button_convertion[BUTTON_R2C2] = 7;
+  button_convertion[BUTTON_R2C3] = 8;
+  button_convertion[BUTTON_R2C4] = 9;
+  button_convertion[BUTTON_R2C5] = 10;
+
+  // init all pins thru the debounce libaray
+  for (int i = 0; i < NUM_BUTTONS; i++) {
+    byte temp = buttons[i];
+    button_events[i] = new DebounceEvent(temp, callback, BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP, CUSTOM_DEBOUNCE_DELAY, CUSTOM_REPEAT_DELAY);
+  }
+
+  // Start emulate itself as a keyboard
   Keyboard.begin();
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+    for (;;); // Don't proceed, loop forever
   }
 
   // Show Adafruit splash screen.
-  display.display();delay(10);
+  display.display(); delay(10);
   display.clearDisplay();
 
+  kbl = 0;
   // Init the menu
-  displayfucn();
-  
+  displayfunc();//
+
   // Ready: flash the screen
-  for(byte i=0; i<3; i++){
-    display.invertDisplay(true);delay(50);
-    display.invertDisplay(false);delay(50);
+  for (byte i = 0; i < 3; i++) {
+    display.invertDisplay(true); delay(50);
+    display.invertDisplay(false); delay(50);
   }
-  
+
+  Serial.begin(115200);
+
+
 }
 
 void loop() {
-  bv0.loop();bv1.loop();bv2.loop();
-  bh0.loop();bh1.loop();bh2.loop();bh3.loop();bh4.loop();
+  // put your main code here, to run repeatedly:
+  for (int i = 0; i < NUM_BUTTONS; i++) {
+    button_events[i]->loop();
+  }
+
 }
 
-void displayfucn(void){
-  switch(kbl){
+
+void displayfunc( ) {
+  switch (kbl) {
     case NORMAL:
-      normal_layout();break;
+      normal_layout(); break;
     case TMUX:
-      tmux_layout();break;
-    case TMUX_PANE:
-      tmux_playout();break;
-    case TERM:
-      term_layout();break;
-    case FUNCT:
-      func_layout();break;
-    case PANIC:
-      panic_layout();break;
+      tmux_layout(); break;
+    case COMMAND:
+      command_layout(); break;
+    default:
+      break;
   }
 }
 
-void normal_layout(void){
+void normal_layout() {
   // Init
   draw_init();
-
-  // Draw left column
-  draw_func_left();
-
   // Draw top row
-  display.setCursor(32, 0);
-  display.print(F("Normal:"));
-
+  display.setCursor(37, 0);
+  display.print(F("M2 UI Mode"));
+  //choose the 10 keys:
+  mykeys[0] = key[15];
+  mykeys[1] = key[0];
+  mykeys[2] = key[4];
+  mykeys[3] = key[6];
+  mykeys[4] = key[16];
+  mykeys[5] = key[2];
+  mykeys[6] = key[1];
+  mykeys[7] = key[3];
+  mykeys[8] = key[7];
+  mykeys[9] = key[5];
   // Draw bottom row
   draw_bottom();
- 
   display.display();
 }
 
-void tmux_layout(void){
+void tmux_layout() {
   draw_init();
-  draw_tmux_left();
-  display.setCursor(32, 0);
-  display.print(F("TMUX:"));
-  if(!tmux_func)draw_tmux_bottom();
-  else draw_tmux_fbottom();
+  display.setCursor(40, 0);
+  display.print(F("TMUX Mode"));
+  //choose the 10 keys:
+  mykeys[0] = key[15];
+  mykeys[1] = key[0];
+  mykeys[2] = key[4];
+  mykeys[3] = key[17];
+  mykeys[4] = key[6];
+  mykeys[5] = key[2];
+  mykeys[6] = key[1];
+  mykeys[7] = key[3];
+  mykeys[8] = key[18];
+  mykeys[9] = key[7];
+  // Draw bottom row
+  draw_bottom();
   display.display();
 }
 
-void tmux_playout(void){
+void command_layout() {
   draw_init();
-  draw_tmux_left();
-  display.setCursor(32, 0);
-  display.print(F("TMUX goto pane:"));
-  draw_tmux_pbottom();
+  display.setCursor(40, 0);
+  display.print(F("COMMAND Mode"));
+  display.setTextSize(1);
+  display.setCursor(0,23);
+  display.print(F("tty>"));
+  //choose the 10 keys:
+  mykeys[0] = key[15];
+  mykeys[1] = key[7]; 
+  mykeys[2] = key[8];
+  mykeys[3] = key[10];
+  mykeys[4] = key[19];
+  mykeys[5] = key[11]; 
+  mykeys[6] = key[12];
+  mykeys[7] = key[13];
+  mykeys[8] = key[9];
+  mykeys[9] = key[14];
+  
+  // Draw bottom row
+  draw_bottom();
   display.display();
 }
 
-void term_layout(void){
-  draw_init();
-  draw_tmux_left();
-  display.setCursor(32, 0);
-  display.print(F("Goto terminal:"));
-  draw_term_bottom();
-  display.display();
-}
 
-void func_layout(void){
-  draw_init();
-  draw_func_left();
-  display.setCursor(32, 0);
-  display.print(F("Type sth:"));
-  draw_func_bottom();
-  display.display();
-}
-
-void panic_layout(void){
-  draw_init();
-  draw_panic_left();
-  display.setCursor(32, 0);
-  display.print(F("Panic mode!!"));
-  draw_panic_bottom();
-  display.display();
-}
-
-void draw_init(){
+void draw_init() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.cp437(true);
 }
 
-// Left Col
 
-void draw_norm_left(void){
-  display.setCursor(7, 0);
-  display.write(240); // ≡
-  display.setCursor(0, 12);
-  display.write(192);display.write(196);display.write(217); // spacebar
-  display.setCursor(4, 24);
-  display.write(27);  // ←
-  display.write(26);  // →
-  display.drawLine(20, 0, 20, display.height()-1, SSD1306_WHITE);
-}
 
-void draw_tmux_left(void){
-  display.setCursor(7, 0);
-  display.write(240); // ≡
-  display.setCursor(3, 12);
-  display.write(94);  // ^
-  display.write(68);  // d
-  display.setCursor(3, 24);
-  display.write(94);  // ^
-  display.write(67);  // c
-  display.drawLine(20, 0, 20, display.height()-1, SSD1306_WHITE);
-}
-
-void draw_func_left(void){
-  display.setCursor(7, 0);
-  display.write(240); // ≡
-  display.setCursor(0, 12);
-  display.write(192);display.write(196);display.write(217); // spacebar
-  display.setCursor(3, 24);
-  display.write(94);  // ^
-  display.write(67);  // c
-  display.drawLine(20, 0, 20, display.height()-1, SSD1306_WHITE);
-}
-
-void draw_panic_left(void){
-  display.setCursor(7, 0);
-  display.write(240); // ≡
-  display.setCursor(0, 12);
-  display.write(101);display.write(115);display.write(99); // esc
-  display.setCursor(7, 24);
-  display.write(236);  // ∞
-  display.drawLine(20, 0, 20, display.height()-1, SSD1306_WHITE);
-}
-
-// Bottom Bar
-
-void draw_bottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(24);  // ↑
-  display.write(25);  // ↓
-  display.write(27);  // ←
-  display.write(26);  // →
-  display.write((byte)0);
-  display.write(20);  // ¶
-}
-
-void draw_tmux_bottom(void){
+void draw_bottom( ) {
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(32, 20);
-  display.write(94);  // ^
-  display.write(66);  // b
-  display.write((byte)0);
-  display.write(102); // f
-  display.write(99);  // c
-  display.write(110); // n
-  display.write((byte)0);
-  display.write(101);
-  display.write(115);
-  display.write(99); // esc
-  display.write((byte)0);
-  display.write(80);  // P
-  display.write(85);  // U
-  display.write((byte)0);
-  display.write(80);  // P
-  display.write(68);  // D
-}
 
-void draw_tmux_fbottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(122);  // z
-  display.write(111);  // o
-  display.write((byte)0);
-  display.write(113);  // q
-  display.write(110);  // n
-  display.write(116);  // t
-}
+  display.setCursor(35, 13);
+  display.write(mykeys[0].symbol[0]); display.write(mykeys[0].symbol[1]); 
+  if(mykeys[0].symbol[1]!=' '||mykeys[5].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[1].symbol[0]); display.write(mykeys[1].symbol[1]);
+  if(mykeys[1].symbol[1]!=' '||mykeys[6].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[2].symbol[0]); display.write(mykeys[2].symbol[1]);
+  if(mykeys[2].symbol[1]!=' '||mykeys[7].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[3].symbol[0]); display.write(mykeys[3].symbol[1]);
+  if(mykeys[3].symbol[1]!=' '||mykeys[8].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[4].symbol[0]); display.write(mykeys[4].symbol[1]);
 
-void draw_tmux_pbottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(48);  // 0
-  display.write(49);  // 1
-  display.write(50);  // 2
-  display.write(51);  // 3
-  display.write(52);  // 4
+  display.setCursor(35, 23);
+  display.write(mykeys[5].symbol[0]); display.write(mykeys[5].symbol[1]);
+  if(mykeys[0].symbol[1]!=' '||mykeys[5].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[6].symbol[0]); display.write(mykeys[6].symbol[1]);
+  if(mykeys[1].symbol[1]!=' '||mykeys[6].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[7].symbol[0]); display.write(mykeys[7].symbol[1]);
+  if(mykeys[2].symbol[1]!=' '||mykeys[7].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[8].symbol[0]); display.write(mykeys[8].symbol[1]);
+  if(mykeys[3].symbol[1]!=' '||mykeys[8].symbol[1]!=' '){display.write(' ');}
+  display.write(mykeys[9].symbol[0]); display.write(mykeys[9].symbol[1]);
+  display.display();
 }
 
 
-void draw_term_bottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(49);  // 1
-  display.write(50);  // 2
-  display.write(55);  // 7
-  display.write((byte)0);
-  display.write(42);  // *
-  display.write(20);  // ¶
-}
 
-void draw_func_bottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(52);  // 4
-  display.write(53);  // 5
-  display.write(54);  // 6
-  display.write((byte)0);
-  display.write(17);  // ◄
-  display.write(20);  // ¶
+//---   START key functions   ---
+void arrow_up() {
+  // do ↑ on press
+  Keyboard.press(KEY_UP_ARROW);
+  display.invertDisplay(true); delay(10);
+  Keyboard.releaseAll(); display.invertDisplay(false);
 }
+void arrow_down() {
+  // do ↓ on press
+  Keyboard.press(KEY_DOWN_ARROW); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void arrow_left() {
+  // do ← on press
+  Keyboard.press(KEY_LEFT_ARROW); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void arrow_right() {
+  // do → on press
+  Keyboard.press(KEY_RIGHT_ARROW); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void spacebar() {
+  // do spacebar on press
+  Keyboard.press(32); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void enter() {
+  // do enter on press
+  Keyboard.press(KEY_RETURN); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void ctrl_b() {
+  // do ctrl-D on press
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(98); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void ctrl_c() {
+  // do ctrl-D on press
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(99); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void ctrl_d() {
+  // do ctrl-D on press
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(100); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+void m2_command() {
+  // type "m2" on press
+  display.invertDisplay(true);
+  Keyboard.print("m2");
+  display.invertDisplay(false);
+}
+void tmux_command() {
+  // type "tmux a" on press (attatch tmux session)
+  display.invertDisplay(true);
+  Keyboard.println("tmux a");
+  display.invertDisplay(false);
+}
+void ctrl_alt_f1() {
+  // do ctrl alt f1 on press
+  display.invertDisplay(true);
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_F1); delay(10); Keyboard.releaseAll();
+  display.invertDisplay(false);
+}
+void ctrl_alt_f2() {
+  // do ctrl alt f2 on press
+  display.invertDisplay(true);
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_F2); delay(10); Keyboard.releaseAll();
+  display.invertDisplay(false);
+}
+void ctrl_alt_f3() {
+  // do ctrl alt f3 on press
+  display.invertDisplay(true);
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_F3); delay(10); Keyboard.releaseAll();
+  display.invertDisplay(false);
+}
+void python_command() {
+  // type "python" on press
+  display.invertDisplay(true);
+  Keyboard.println("python /home/m2/2020_ws/src/m2_tr2020/src/tmux_tui.py");
+  delay(10);
+  display.invertDisplay(false);
+}
+void nothing() {
+  display.invertDisplay(true);
+  Serial.print("nothing");
+  delay(10);Keyboard.releaseAll();
+  display.invertDisplay(false);
+};
+void page_up() {
+  // page up on press
+  display.invertDisplay(true);
+  Keyboard.press(KEY_PAGE_UP);
+  delay(10);Keyboard.releaseAll();
+  display.invertDisplay(false);
+}
+void page_down() {
+  // page down on press
+  display.invertDisplay(true);
+  Keyboard.press(KEY_PAGE_DOWN);
+  delay(10);Keyboard.releaseAll();
+  display.invertDisplay(false);
+}
+void launch_tr() {
+  // switch tty and launch tui
 
-void draw_panic_bottom(void){
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(40, 16);
-  display.write(224);  // α
-  display.write(225);  // ß
-  display.write(226);  // Γ
-  display.write(229);  // σ
-  display.write(233);  // Θ
+  // goto tty1
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_F1);delay(10);
+  Keyboard.releaseAll();delay(100);
+
+  // kill everything, including tmux
+  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99); // ctrl-c
+  delay(10); Keyboard.releaseAll();
+  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(98); // ctrl-b
+  delay(10); Keyboard.releaseAll();
+  Keyboard.println(":exit"); delay(10);
+  for(int i=0;i<2;i++){
+    Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99); // ctrl-c
+    delay(10); Keyboard.releaseAll();
+    Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(100); // ctrl-d
+    delay(10); Keyboard.releaseAll();
+  }
+
+  // launch tmux tr_2020 session
+  delay(100);Keyboard.println("tmux new -s tr_2020");delay(100);
+
+  // goto tty3
+  Keyboard.press(KEY_LEFT_CTRL);
+  Keyboard.press(KEY_LEFT_ALT);
+  Keyboard.press(KEY_F3);delay(10);
+  Keyboard.releaseAll();delay(100);
+
+  // kill everything and relaunch
+  for(int i=0;i<2;i++){
+    Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99); // ctrl-c
+    delay(10); Keyboard.releaseAll();
+    Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(100); // ctrl-d
+    delay(10); Keyboard.releaseAll();
+  }
+  delay(100);Keyboard.println("python ~/2020_ws/src/m2_tr2020/src/tmux_tui.py");
 }
+//---   END key functions   ---
