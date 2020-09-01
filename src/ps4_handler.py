@@ -6,16 +6,13 @@ from geometry_msgs.msg import Twist
 from actionlib_msgs.msg import GoalID
 from std_srvs.srv import Trigger, SetBool, SetBoolRequest
 from m2_chassis_utils.msg import ChannelTwist
-from m2_ps4.msg import Ps4Data, RgbTime
-from m2_ps4.srv import SetRgb, SetRgbRequest
+from m2_ps4.msg import Ps4Data, RgbTime, FfTime
+from m2_ps4.srv import SetRgb, SetRgbRequest, SetFf, SetFfRequest
 from std_msgs.msg import Bool
 from m2_tr2020.msg import *
 import numpy as np
 from configs.fieldConfig import *
 import chassis_control
-
-direct = ChannelTwist()
-direct.channel = ChannelTwist.CONTROLLER
 
 old_data = Ps4Data()
 
@@ -44,6 +41,7 @@ motor_en = True
 
 # Odom position
 odom_pos = None
+is_offset = False
 
 def slider_cb(msg):
     global slider_pos
@@ -96,7 +94,7 @@ def odom_cb(odom_msg):
     odom_pos["z"] = transformations.euler_from_quaternion(quaternion)[2]
 
 def ps4_cb(ps4_data): # update ps4 data
-    global direct,old_data,control_mode,motor_en
+    global old_data,control_mode,motor_en
     if ps4_data.l2 and ps4_data.r2:
         if ps4_data.share and not old_data.share:
             try_call_motors(False)
@@ -117,52 +115,33 @@ def ps4_cb(ps4_data): # update ps4 data
 
     if control_mode == MANUAL:
         # learnt the max speed of 1:15 motors the hard way, 4ms^-1 will burn the motor board (no longer true in 2020)
-        # 3 ms^-1 linear + 1.2 rads^-1 almost max out human reaction
-
-        global_vel_x = 0.0
-        global_vel_y = 0.0
-        global_vel_z = 0.0
+        # 3 ms^-1 linear + 1.5 rads^-1 almost max out human reaction
+        global_vel = Twist()
         if match_color == MATCH_RED:
             # non-linear control
-            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly)
-            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx)
-            global_vel_z = ps4_data.hat_rx*max_rotational_speed
-            # limit the vel by odom_pos
-            # ff_req = SetBoolRequest(False)
-            # if odom_pos != None:
-            #     if odom_pos["x"] > 1.5-0.6:
-            #         global_vel_x = min(0.1,global_vel_x)
-            #         ff_req = SetBoolRequest(True)
-            #     if odom_pos["x"] < 0.6:
-            #         global_vel_x = max(-0.1,global_vel_x)
-            #         ff_req = SetBoolRequest(True)
-            #     try:
-            #         ps4_rumble_srv(ff_req)
-            #     except (rospy.ServiceException, rospy.ROSException) as e:
-            #         rospy.logerr_throttle(10,"/set_ff call failed")
+            global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly)
+            global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx)
+            global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
         elif match_color == MATCH_BLUE:
-            global_vel_x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly*-1)
-            global_vel_y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx*-1)
-            global_vel_z = ps4_data.hat_rx*max_rotational_speed
+            # remap the direction
+            global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly*-1)
+            global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, ps4_data.hat_lx*-1)
+            global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
 
-        twist = Twist()
-        twist.linear.x  = global_vel_x
-        twist.linear.y  = global_vel_y
-        twist.angular.z = global_vel_z
-        vel_magnitude = np.hypot(twist.linear.x, twist.linear.y)
-        if np.isclose(twist.angular.z,0.0) and np.isclose(vel_magnitude,0.0):
+        vel_magnitude = np.hypot(global_vel.linear.x, global_vel.linear.y)
+        if np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0):
             orientation_helper.stop_z()
         if vel_magnitude > max_linear_speed:
-            twist.linear.x = twist.linear.x/vel_magnitude*max_linear_speed
-            twist.linear.y = twist.linear.y/vel_magnitude*max_linear_speed
-        fix_theta_vel = orientation_helper.compensate(twist)
+            global_vel.linear.x = global_vel.linear.x/vel_magnitude*max_linear_speed
+            global_vel.linear.y = global_vel.linear.y/vel_magnitude*max_linear_speed
+        fix_theta_vel = orientation_helper.compensate(global_vel)
         local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
+        # Publish velocity or brake
         if ps4_data.l1:
             abs_pub.publish(True)
         else:
             abs_pub.publish(False)
-            global direct
             direct = ChannelTwist()
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear
@@ -194,6 +173,69 @@ def ps4_cb(ps4_data): # update ps4 data
                     dji_try_pub.publish(goal)
 
     elif control_mode == SEMI_AUTO:
+        # control offset at reciving position, vel fixed at 1.8ms^-1
+        offset_speed = 1.8
+        global_vel = Twist()
+        ff_req = SetFfRequest([])
+        if match_color == MATCH_RED:
+            # non-linear control
+            global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly)
+            global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx)
+            global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
+            # limit the vel by odom_pos
+            if odom_pos != None:
+                if odom_pos["x"] > 1.5-0.6:
+                    global_vel.linear.x = min(0.1,global_vel.linear.x)
+                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
+                if odom_pos["x"] < 0.6:
+                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
+                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
+        elif match_color == MATCH_BLUE:
+            # remap the direction
+            global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly*-1)
+            global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx*-1)
+            global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
+            # limit the vel by odom_pos
+            if odom_pos != None:
+                if odom_pos["x"] > 13.3-(1.5-0.60):
+                    global_vel.linear.x = min(0.1,global_vel.linear.x)
+                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
+                if odom_pos["x"] < 13.3-0.6:
+                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
+                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
+
+        vel_magnitude = np.hypot(global_vel.linear.x, global_vel.linear.y)
+        if np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0):
+            orientation_helper.stop_z()
+        if vel_magnitude > offset_speed:
+            global_vel.linear.x = global_vel.linear.x/vel_magnitude*offset_speed
+            global_vel.linear.y = global_vel.linear.y/vel_magnitude*offset_speed
+        fix_theta_vel = orientation_helper.compensate(global_vel)
+        local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
+
+        # Publish velocity if manual offset is non-zero
+        global is_offset
+        if not np.isclose(vel_magnitude,0.0):
+            is_offset = True
+            direct = ChannelTwist()
+            direct.channel = ChannelTwist.CONTROLLER
+            direct.linear = local_vel.linear
+            direct.angular = local_vel.angular
+            vel_pub.publish(direct)
+            try:
+                ps4_ff_srv(ff_req)
+            except (rospy.ServiceException, rospy.ROSException) as e:
+                rospy.logerr_throttle(10,"/set_ff call failed")
+        elif is_offset:
+            is_offset = False
+            direct = ChannelTwist() # Stop moving
+            direct.channel = ChannelTwist.CONTROLLER
+            vel_pub.publish(direct)
+            try:
+                ps4_ff_srv(SetFfRequest([])) # Stop rumble
+            except (rospy.ServiceException, rospy.ROSException) as e:
+                rospy.logerr_throttle(10,"/set_ff call failed")
+
         if ps4_data.options and not old_data.options: # tryspot1
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 1
@@ -267,7 +309,7 @@ dji_cancel_pub = rospy.Publisher('/dji_try_server/cancel', GoalID, queue_size = 
 odom_sub = rospy.Subscriber("chassis_odom",Odometry,odom_cb)
 ps4_sub = rospy.Subscriber('input/ps4_data', Ps4Data, ps4_cb)
 ps4_led_srv = rospy.ServiceProxy('/set_led', SetRgb)
-ps4_rumble_srv = rospy.ServiceProxy('/set_rumble', SetBool)
+ps4_ff_srv = rospy.ServiceProxy('/set_ff', SetFf)
 
 # tr1/pneumatic
 io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1)
