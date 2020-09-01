@@ -12,15 +12,6 @@
         <arg name="serial_port" default="/dev/tinyboard-EncoderIMUBoard_0001" />
     </include>
 
-    <!-- <node name="limit_switch_reset"
-        pkg="m2_tr2020"
-        type="limit_switch.py"
-        respawn="true">
-        <param name="reset_x" value="$(arg init_x)" />
-        <param name="reset_y" value="$(arg init_y)" />
-        <param name="reset_z" value="$(arg init_z)" />
-    </node>   -->
-
     <node name = "rqt_viz"
         pkg = "m2_chassis_utils"
         type = "odom2plot.py"

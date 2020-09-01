@@ -1,5 +1,5 @@
 <launch>
-    <arg name = "joy" default = "/dev/input/js0"/>
+    <arg name = "joy" default="/dev/input/js0"/>
     <arg name = "team"/>
     <arg name = "color"/>
     <arg name = "manual_vel"/>

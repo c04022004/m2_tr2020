@@ -25,6 +25,7 @@ BRIGHT_RED = (255,0,0,0.1)
 DIM_RED = (50,0,0,0.1)
 BRIGHT_BLUE = (0,0,255,0.1)
 DIM_BLUE = (0,0,50,0.1)
+BRIGHT_WHITE = (255,255,255,0.1)
 DIM_WHITE = (50,50,50,0.1)
 
 # Saving slider position for TR2
@@ -32,9 +33,10 @@ slider_pos = False
 
 # State of the ps4 handler
 control_mode = None
-MANUAL = 3
-SEMI_AUTO = 4
-NO_MOTOR = 5
+FULL_MANUAL = 3
+ASSISTED_MANUAL =4
+SEMI_AUTO = 5
+NO_MOTOR = 6
 
 # Motor enable state
 motor_en = True
@@ -59,16 +61,20 @@ def update_led():
     rgb_req = SetRgbRequest(False, [])
     if match_color == MATCH_RED:
         rgb_req.rgb_sequence.append(RgbTime(*BRIGHT_RED))
-        if control_mode == MANUAL:
+        if control_mode == ASSISTED_MANUAL:
             rgb_req.rgb_sequence.append(RgbTime(*DIM_RED))
         elif control_mode == NO_MOTOR:
             rgb_req.rgb_sequence.append(RgbTime(*DIM_BLUE))
     if match_color == MATCH_BLUE:
         rgb_req.rgb_sequence.append(RgbTime(*BRIGHT_BLUE))
-        if control_mode == MANUAL:
+        if control_mode == ASSISTED_MANUAL:
             rgb_req.rgb_sequence.append(RgbTime(*DIM_BLUE))
         elif control_mode == NO_MOTOR:
             rgb_req.rgb_sequence.append(RgbTime(*DIM_RED))
+    if control_mode == FULL_MANUAL:
+        rgb_req = SetRgbRequest(False, [])
+        rgb_req.rgb_sequence.append(RgbTime(*BRIGHT_WHITE))
+        rgb_req.rgb_sequence.append(RgbTime(*DIM_WHITE))
     try:
         ps4_led_srv(rgb_req)
     except (rospy.ServiceException, rospy.ROSException) as e:
@@ -100,10 +106,14 @@ def ps4_cb(ps4_data): # update ps4 data
             try_call_motors(False)
             control_mode = NO_MOTOR
             update_led()
+        if ps4_data.options and not old_data.options:
+            try_call_motors(True)
+            control_mode = FULL_MANUAL
+            update_led()
     elif ps4_data.l1 and not old_data.l1:
-        if control_mode!= MANUAL:
+        if control_mode!= ASSISTED_MANUAL and orientation_helper is not None:
             orientation_helper.stop_z()
-        control_mode = MANUAL
+        control_mode = ASSISTED_MANUAL
         try_call_motors(True)
         update_led()
         cancel_all_action()
@@ -113,7 +123,18 @@ def ps4_cb(ps4_data): # update ps4 data
         try_call_motors(True)
         update_led()
 
-    if control_mode == MANUAL:
+    # Velocity related calculations
+    direct = ChannelTwist()
+    if control_mode == FULL_MANUAL:
+        local_vel = Twist()
+        local_vel.linear.x = np.copysign(np.abs(ps4_data.hat_lx)**1.7*max_linear_speed, -ps4_data.hat_lx)
+        local_vel.linear.y = np.copysign(np.abs(ps4_data.hat_ly)**1.7*max_linear_speed, ps4_data.hat_ly)
+        local_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
+        direct.channel = ChannelTwist.EMERGENCY
+        direct.linear = local_vel.linear
+        direct.angular = local_vel.angular
+        vel_pub.publish(direct)
+    elif control_mode == ASSISTED_MANUAL:
         # learnt the max speed of 1:15 motors the hard way, 4ms^-1 will burn the motor board (no longer true in 2020)
         # 3 ms^-1 linear + 1.5 rads^-1 almost max out human reaction
         global_vel = Twist()
@@ -142,35 +163,10 @@ def ps4_cb(ps4_data): # update ps4 data
             abs_pub.publish(True)
         else:
             abs_pub.publish(False)
-            direct = ChannelTwist()
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear
             direct.angular = local_vel.angular
             vel_pub.publish(direct)
-
-        # Change ds4 button layout according to robot
-        if robot_type == ROBOT_TR1:
-            # try latch release/retract (io_7)
-            if ps4_data.triangle and not old_data.triangle: # release/try
-                io_pub_latch.publish(1)
-            if ps4_data.cross and not old_data.cross: # retract
-                io_pub_latch.publish(0)
-        elif robot_type == ROBOT_TR2:
-            # try slider release/retract (io_0)
-            if ps4_data.triangle and not old_data.triangle: # pushing up
-                io_pub_slider.publish(1)
-            if ps4_data.cross and not old_data.cross: # pushing down
-                io_pub_slider.publish(0)
-            if ps4_data.square and not old_data.square: # dji_try
-                if unblock_try():
-                    goal = TryActionGoal()
-                    goal.goal.scene_id = 3
-                    dji_try_pub.publish(goal)
-            if ps4_data.circle and not old_data.circle: # dji_up
-                if unblock_try():
-                    goal = TryActionGoal()
-                    goal.goal.scene_id = 4
-                    dji_try_pub.publish(goal)
 
     elif control_mode == SEMI_AUTO:
         # control offset at reciving position, vel fixed at 1.8ms^-1
@@ -217,7 +213,6 @@ def ps4_cb(ps4_data): # update ps4 data
         global is_offset
         if not np.isclose(vel_magnitude,0.0):
             is_offset = True
-            direct = ChannelTwist()
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear
             direct.angular = local_vel.angular
@@ -236,10 +231,38 @@ def ps4_cb(ps4_data): # update ps4 data
             except (rospy.ServiceException, rospy.ROSException) as e:
                 rospy.logerr_throttle(10,"/set_ff call failed")
 
+    # Try-related functions
+    if control_mode == FULL_MANUAL or control_mode == ASSISTED_MANUAL:
+        # Change ds4 button layout according to robot
+        if robot_type == ROBOT_TR1:
+            # try latch release/retract (io_7)
+            if ps4_data.triangle and not old_data.triangle: # release/try
+                io_pub_latch.publish(1)
+            if ps4_data.cross and not old_data.cross: # retract
+                io_pub_latch.publish(0)
+        elif robot_type == ROBOT_TR2:
+            # try slider release/retract (io_0)
+            if ps4_data.triangle and not old_data.triangle: # pushing up
+                io_pub_slider.publish(1)
+            if ps4_data.cross and not old_data.cross: # pushing down
+                io_pub_slider.publish(0)
+            if ps4_data.square and not old_data.square: # dji_try
+                if unblock_try():
+                    goal = TryActionGoal()
+                    goal.goal.scene_id = 3
+                    dji_try_pub.publish(goal)
+            if ps4_data.circle and not old_data.circle: # dji_up
+                if unblock_try():
+                    goal = TryActionGoal()
+                    goal.goal.scene_id = 4
+                    dji_try_pub.publish(goal)
+
+    elif control_mode == SEMI_AUTO:
         if ps4_data.options and not old_data.options: # tryspot1
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 1
             fulltask_pub.publish(goal)
+            print("ts1")
         if ps4_data.triangle and not old_data.triangle: # tryspot2
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 2
@@ -269,7 +292,7 @@ def ps4_cb(ps4_data): # update ps4 data
                 # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
                 goal.goal.scene_id = 6
-                fulltask_pub.publish(goal)
+                # fulltask_pub.publish(goal)
             elif match_color == MATCH_BLUE:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
@@ -285,7 +308,8 @@ def ps4_cb(ps4_data): # update ps4 data
                 # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
                 goal.goal.scene_id = 6
-                fulltask_pub.publish(goal)
+                # fulltask_pub.publish(goal)
+
     old_data = ps4_data
 
 def try_call_motors(set_bool):
