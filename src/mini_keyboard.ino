@@ -9,6 +9,7 @@
 void normal_layout(uint8_t pin);
 void tmux_layout(uint8_t pin);
 void command_layout(uint8_t pin);
+void displayfunc();
 
 void arrow_up();
 void arrow_down();
@@ -29,7 +30,8 @@ void nothing(); //it is not used, handled in callback
 void page_up();
 void page_down();
 void launch_tr();
-
+void tmux_z();
+void tab();
 //---   END prototypes   ---
 
 
@@ -41,27 +43,28 @@ struct keyType {
   function_ptr function;   //15,0,4,8,15, 2,1,3,7,5
 };
 
-#define key_count 20
+#define key_count 22
 //!!!!!! all keys display characters and functions stored here, value assignment in setup()
-keyType* key = new keyType[key_count]; 
-keyType* mykeys = new keyType[10]; // all the 10 keys of the current mode
+keyType *key = new keyType[key_count]; 
+keyType *mykeys = new keyType[10]; // all the 10 keys of the current mode
 //store display layout in this array (2 characters for each key, 10 keys)
 char keySymbol[key_count][2] = {
   {24, ' ' }, {25, ' '}, {27, ' '}, {26, ' '}, {95, ' '},
   {'E', 'n'}, {94, 'B'}, {94, 'C'}, {94, 'D'}, {'m','2'},
   {'T', 'm'}, {'F','1'}, {'F','2'}, {'F','3'}, {'P','y'},
-  {240, ' '}, {219,' '}, {'P','U'}, {'P','D'}, {'U','I'}};
+  {240, ' '}, {219,' '}, {'P','U'}, {'P','D'}, {'U','I'},
+  {'Z', 'm'}, {27 , 26}};
 //store key functions in this array
 void (*keyFunction[key_count])() = {
   arrow_up, arrow_down, arrow_left, arrow_right, spacebar,
   enter, ctrl_b, ctrl_c, ctrl_d, m2_command,
   tmux_command, ctrl_alt_f1, ctrl_alt_f2, ctrl_alt_f3, python_command,
-  nothing, nothing, page_up, page_down, launch_tr};
+  nothing, nothing, page_up, page_down, launch_tr,
+  tmux_z, tab};
 //---   END store   ---
 
 
 // ------ START buttons library ------
-
 #define NUM_BUTTONS 10
 
 #define BUTTON_R1C1 9
@@ -84,19 +87,16 @@ byte button_convertion[32] = {0};
 DebounceEvent* button_events[NUM_BUTTONS];
 #define CUSTOM_REPEAT_DELAY     0 // waits for 2nd click, set 0 to disable double clicks
 #define CUSTOM_DEBOUNCE_DELAY   50
-
 // ------ END buttons library ------
 
+
 // ------ START OLED display library ------
-
-
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 // ------ END OLED display library ------
 
 
@@ -109,76 +109,39 @@ enum layout {
   COMMAND
 };
 layout kbl = 0; //kbl is the mode
-
-
 // ------ END Keyboard library ------
 
-void displayfunc();
-
 void callback(uint8_t pin, uint8_t event, uint8_t count, uint16_t length) {
-  Serial.print("Pin : "); Serial.print(button_convertion[pin]);
-  Serial.print(" Event : "); Serial.print(event);
-  Serial.print(" Count : "); Serial.print(count);
-  Serial.print(" Length: "); Serial.print(length);
-  Serial.println();
+  //  Serial.print("Pin : "); Serial.print(button_convertion[pin]);
+  //  Serial.print(" Event : "); Serial.print(event);
+  //  Serial.print(" Count : "); Serial.print(count);
+  //  Serial.print(" Length: "); Serial.print(length);
+  //  Serial.println();
   if (button_convertion[pin] == 1) {
     if (event == 2) {
       kbl = (kbl + 1) % 3;
       display.invertDisplay(true); delay(5);
       display.invertDisplay(false);
     } else if (event == 3 && count == 1 && length > 250) {
-      kbl = NORMAL;
+      kbl = NORMAL; // go back to normal mode on long press
     }
     displayfunc();
   } else if(event == 2){
-    //key function perform
-    switch (pin) {
-      case BUTTON_R1C1:
-        mykeys[0].function();
-        break;
-      case BUTTON_R1C2:
-        mykeys[1].function();
-        break;
-      case BUTTON_R1C3:
-        mykeys[2].function();
-        break;
-      case BUTTON_R1C4:
-        mykeys[3].function();
-        break;
-      case BUTTON_R1C5:
-        mykeys[4].function();
-        break;
-      case BUTTON_R2C1:
-        mykeys[5].function();
-        break;
-      case BUTTON_R2C2:
-        mykeys[6].function();
-        break;
-      case BUTTON_R2C3:
-        mykeys[7].function();
-        break;
-      case BUTTON_R2C4:
-        mykeys[8].function();
-        break;
-      case BUTTON_R2C5:
-        mykeys[9].function();
-        break;
-      default:
-        break;
+    // perform key function 
+    byte ordered_pin = button_convertion[pin];
+    if (ordered_pin>0 && ordered_pin<=10){
+      mykeys[ordered_pin-1].function();
     }
-
   }
 }
 
 void setup() {
-  // put your setup code here, to run once:
-  //START copy keys symbol and functions into the single array key
+  // START copy keys symbol and functions into the single array key
   for (int i; i < key_count; ++i) {
     key[i].symbol[0] = keySymbol[i][0];
     key[i].symbol[1] = keySymbol[i][1];
     key[i].function = keyFunction[i];
   }
-
 
   // create the hash table for the buttons
   button_convertion[BUTTON_R1C1] = 1;
@@ -195,7 +158,7 @@ void setup() {
   // init all pins thru the debounce libaray
   for (int i = 0; i < NUM_BUTTONS; i++) {
     byte temp = buttons[i];
-    button_events[i] = new DebounceEvent(temp, callback, BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP, CUSTOM_DEBOUNCE_DELAY, CUSTOM_REPEAT_DELAY);
+    button_events[i] = new DebounceEvent(temp, callback, BUTTON_PUSHBUTTON, CUSTOM_DEBOUNCE_DELAY, CUSTOM_REPEAT_DELAY);
   }
 
   // Start emulate itself as a keyboard
@@ -203,7 +166,7 @@ void setup() {
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
-    Serial.println(F("SSD1306 allocation failed"));
+    //  Serial.println(F("SSD1306 allocation failed"));
     for (;;); // Don't proceed, loop forever
   }
 
@@ -221,9 +184,7 @@ void setup() {
     display.invertDisplay(false); delay(50);
   }
 
-  Serial.begin(115200);
-
-
+  //  Serial.begin(115200);
 }
 
 void loop() {
@@ -231,7 +192,6 @@ void loop() {
   for (int i = 0; i < NUM_BUTTONS; i++) {
     button_events[i]->loop();
   }
-
 }
 
 
@@ -263,7 +223,7 @@ void normal_layout() {
   mykeys[5] = key[2];
   mykeys[6] = key[1];
   mykeys[7] = key[3];
-  mykeys[8] = key[7];
+  mykeys[8] = key[21];
   mykeys[9] = key[5];
   // Draw bottom row
   draw_bottom();
@@ -277,7 +237,7 @@ void tmux_layout() {
   //choose the 10 keys:
   mykeys[0] = key[15];
   mykeys[1] = key[0];
-  mykeys[2] = key[4];
+  mykeys[2] = key[20];
   mykeys[3] = key[17];
   mykeys[4] = key[6];
   mykeys[5] = key[2];
@@ -307,13 +267,11 @@ void command_layout() {
   mykeys[6] = key[12];
   mykeys[7] = key[13];
   mykeys[8] = key[9];
-  mykeys[9] = key[14];
-  
+  mykeys[9] = key[5];
   // Draw bottom row
   draw_bottom();
   display.display();
 }
-
 
 void draw_init() {
   display.clearDisplay();
@@ -321,8 +279,6 @@ void draw_init() {
   display.setTextColor(SSD1306_WHITE);
   display.cp437(true);
 }
-
-
 
 void draw_bottom( ) {
   display.setTextSize(1);
@@ -351,8 +307,6 @@ void draw_bottom( ) {
   display.write(mykeys[9].symbol[0]); display.write(mykeys[9].symbol[1]);
   display.display();
 }
-
-
 
 //---   START key functions   ---
 void arrow_up() {
@@ -387,13 +341,13 @@ void enter() {
   delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
 }
 void ctrl_b() {
-  // do ctrl-D on press
+  // do ctrl-B on press
   Keyboard.press(KEY_LEFT_CTRL);
   Keyboard.press(98); display.invertDisplay(true);
   delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
 }
 void ctrl_c() {
-  // do ctrl-D on press
+  // do ctrl-C on press
   Keyboard.press(KEY_LEFT_CTRL);
   Keyboard.press(99); display.invertDisplay(true);
   delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
@@ -506,5 +460,20 @@ void launch_tr() {
     delay(10); Keyboard.releaseAll();
   }
   delay(100);Keyboard.println("python ~/2020_ws/src/m2_tr2020/src/tmux_tui.py");
+  kbl=NORMAL;displayfunc();
+}
+
+void tmux_z(){
+  // ctrl-b + z (toggle zoom) on press
+  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(98);delay(10);
+  Keyboard.releaseAll();display.invertDisplay(true);
+  Keyboard.press(122);delay(10);
+  Keyboard.releaseAll(); display.invertDisplay(false);
+}
+
+void tab(){
+  // do tab on press
+  Keyboard.press(KEY_TAB); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
 }
 //---   END key functions   ---
