@@ -444,7 +444,9 @@ void launch_tr() {
   }
 
   // launch tmux tr_2020 session
-  delay(100);Keyboard.println("tmux new -s tr_2020");delay(100);
+  delay(100);Keyboard.println("tmux new -s tr_2020");
+  delay(100);Keyboard.println("mkdir -p ~/bags");
+  delay(50);Keyboard.println("cd ~/bags");delay(50);
 
   // goto tty3
   Keyboard.press(KEY_LEFT_CTRL);
