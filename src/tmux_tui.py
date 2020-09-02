@@ -13,6 +13,27 @@ import atexit
 
 from ds4_names import DS4_NAME_TO_MAC, DS4_NAMES
 
+def npyscr_notify_terminal(cmd, args, timeout=10, backlog_size=5):
+    backlog = []
+    with pexpect.spawn(cmd, args=args) as proc:
+        start = time.time()
+        last_line = b""
+        while time.time() < start + timeout:
+            try:
+                byte = proc.read_nonblocking(timeout=1)
+                if byte == b"\n":
+                    backlog.append(last_line.decode('utf-8'))
+                    while len(backlog) > backlog_size:
+                        backlog.pop(0)
+                    last_line = b""
+                else:
+                    last_line += byte
+            except pexpect.TIMEOUT:
+                pass
+            remaining_time = round(start + timeout - time.time())
+            npyscreen.notify("\n".join(backlog), title=f"{cmd} {args} [{remaining_time}s]")
+        proc.terminate(force=True)
+
 class connectButton(npyscreen.ButtonPress):
     def __init__(self, *args, **keywords):
         super(connectButton, self).__init__(*args, **keywords)
@@ -122,6 +143,13 @@ class ListDs4Button(npyscreen.ButtonPress):
                 files.append('{} ({})'.format(path[5:], mac))
 
         npyscreen.notify_wait("Connected devices: {}".format(files if len(files) > 0 else "None"))
+
+class PingButton(npyscreen.ButtonPress):
+    def __init__(self, *args, **keywords):
+        super(PingButton, self).__init__(*args, **keywords)
+
+    def whenPressed(self):
+        npyscr_notify_terminal("ping", ["10.42.0.1"], timeout=10)
 
 class ProperSlider(npyscreen.Slider):
     def __init__(self, *args, **keywords):
@@ -275,6 +303,10 @@ class MainForm(npyscreen.ActionFormV2):
             values = ['rx', 'rtx'],
             max_width=40, max_height=3, relx=_relx, rely=_rely,
         )
+        _rely += 3
+        self.ping = self.add(PingButton, name="Ping AP",
+                max_height=1, relx=_relx, rely=_rely)
+        _rely += 1
 
         npyscreen.notify('Program initiating!\nPlease wait...', title='Robocon 2020 - M2 Robotics')
         self.th = tmux_helper()
