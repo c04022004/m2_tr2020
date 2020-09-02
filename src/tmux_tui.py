@@ -13,6 +13,8 @@ import atexit
 
 from ds4_names import DS4_NAME_TO_MAC, DS4_NAMES
 
+TMUX_SESSION_NAME = "robocon_2020"
+
 def npyscr_notify_terminal(cmd, args, timeout=10, backlog_size=10):
     backlog = []
     with pexpect.spawn(cmd, args=args) as proc:
@@ -185,10 +187,10 @@ class tmux_helper(object):
         self.server = libtmux.Server()
     
     def find_session(self):
-        if self.server.has_session("tr_2020"):
-            self.session = self.server.find_where({ "session_name": "tr_2020" })
+        if self.server.has_session(TMUX_SESSION_NAME):
+            self.session = self.server.find_where({ "session_name": TMUX_SESSION_NAME})
         else:
-            self.session = self.server.new_session("tr_2020")
+            self.session = self.server.new_session(TMUX_SESSION_NAME)
         return self.session
     
     def launch_tr(self, team, color, manual_vel, ds4_name):
@@ -340,7 +342,7 @@ class MainForm(npyscreen.ActionFormV2):
 def exit_handler():
     server = libtmux.Server()
     try:
-        session = server.find_where({ "session_name": "tr_2020" })
+        session = server.find_where({ "session_name": TMUX_SESSION_NAME})
         window = session.attached_window
         panes=window.list_panes()
         for pane_id in range(len(panes))[::-1]:
