@@ -1,8 +1,12 @@
 <launch>
+    <arg name = "color"/>
 
-    <arg name="init_x" default="0.395"/>
-    <arg name="init_y" default="9.646"/>
-    <arg name="init_z" default="-1.570796326795"/>
+    <arg name="init_x" default="0.355" if="$(eval arg('color') =='red')"/>
+    <arg name="init_x" default="12.945" if="$(eval arg('color') =='blue')"/>
+    <arg name="init_y" default="9.645"/>
+    <arg name="init_z" default="-1.570796326795" if="$(eval arg('color') =='red')"/>
+    <arg name="init_z" default="+1.570796326795" if="$(eval arg('color') =='blue')"/>
+
     <include file="$(find m2_encoder_imu_board)/launch/actionx.launch">
         <!-- <arg name="init_x" default="12.925"/> -->
         <arg name="init_x" value="$(arg init_x)"/>
@@ -25,8 +29,10 @@
         <param name="invert_scan_multiplier" value="-1.0" /> <!-- -1.0 if lidar is flipped -->
         <param name="angle_min" value="1.9"/> <!-- avoid the wheel -->
         <param name="angle_max" value="4.38"/>  <!-- avoid the wheel -->
-        <param name="x_min" value="-0.02" />  <!-- red game field -->
-        <param name="x_max" value="6.67" /> <!-- red game field -->
+        <param name="x_min" value="-0.02" if="$(eval arg('color') =='red')"/>  <!-- red game field -->
+        <param name="x_max" value="6.67"  if="$(eval arg('color') =='red')"/> <!-- red game field -->
+        <param name="x_min" value="6.63"  if="$(eval arg('color') =='blue')"/>  <!-- blue game field -->
+        <param name="x_max" value="13.32" if="$(eval arg('color') =='blue')"/> <!-- blue game field -->
     </node>
 
 </launch>

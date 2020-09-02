@@ -220,7 +220,7 @@ class tmux_helper(object):
             panes[4].send_keys('roslaunch m2_tr2020 base_hw_djimotor.launch', suppress_history=False)
         time.sleep(1.0)
 
-        panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch', suppress_history=False)
+        panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch color:=%s'%color, suppress_history=False)
         time.sleep(1.0)
 
         panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
