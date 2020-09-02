@@ -31,7 +31,7 @@ def npyscr_notify_terminal(cmd, args, timeout=10, backlog_size=5):
             except pexpect.TIMEOUT:
                 pass
             remaining_time = round(start + timeout - time.time())
-            npyscreen.notify("\n".join(backlog), title=f"{cmd} {args} [{remaining_time}s]")
+            npyscreen.notify("\n".join(backlog), title=f"{cmd} {args} [{remaining_time}s]", wide=True, wrap=False)
         proc.terminate(force=True)
 
 class connectButton(npyscreen.ButtonPress):
