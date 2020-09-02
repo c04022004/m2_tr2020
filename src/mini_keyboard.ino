@@ -29,7 +29,7 @@ void python_command();
 void nothing(); //it is not used, handled in callback
 void page_up();
 void page_down();
-void launch_tr();
+void launch_ui();
 void tmux_z();
 void tab();
 //---   END prototypes   ---
@@ -59,7 +59,7 @@ void (*keyFunction[key_count])() = {
   arrow_up, arrow_down, arrow_left, arrow_right, spacebar,
   enter, ctrl_b, ctrl_c, ctrl_d, m2_command,
   tmux_command, ctrl_alt_f1, ctrl_alt_f2, ctrl_alt_f3, python_command,
-  nothing, nothing, page_up, page_down, launch_tr,
+  nothing, nothing, page_up, page_down, launch_ui,
   tmux_z, tab};
 //---   END store   ---
 
@@ -394,10 +394,10 @@ void ctrl_alt_f3() {
   Keyboard.press(KEY_F3); delay(10); Keyboard.releaseAll();
   display.invertDisplay(false);
 }
-void python_command() {
+void python_command() { // repurposed to killall python
   // type "python" on press
   display.invertDisplay(true);
-  Keyboard.println("python /home/m2/2020_ws/src/m2_tr2020/src/tmux_tui.py");
+  Keyboard.println("killall python");
   delay(10);
   display.invertDisplay(false);
 }
@@ -421,7 +421,7 @@ void page_down() {
   delay(10);Keyboard.releaseAll();
   display.invertDisplay(false);
 }
-void launch_tr() {
+void launch_ui() {
   // switch tty and launch tui
 
   // goto tty1
@@ -444,9 +444,9 @@ void launch_tr() {
   }
 
   // launch tmux tr_2020 session
-  delay(100);Keyboard.println("tmux new -s tr_2020");
-  delay(100);Keyboard.println("mkdir -p ~/bags");
-  delay(50);Keyboard.println("cd ~/bags");delay(50);
+  delay(100);Keyboard.println("tmux new -s robocon_2020");delay(100);
+  //delay(100);Keyboard.println("mkdir -p ~/bags");
+  //delay(100);Keyboard.println("cd ~/bags");
 
   // goto tty3
   Keyboard.press(KEY_LEFT_CTRL);
@@ -461,7 +461,7 @@ void launch_tr() {
     Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(100); // ctrl-d
     delay(10); Keyboard.releaseAll();
   }
-  delay(100);Keyboard.println("python ~/2020_ws/src/m2_tr2020/src/tmux_tui.py");
+  delay(100);Keyboard.println("python ~/tmux_tui.py");
   kbl=NORMAL;displayfunc();
 }
 
