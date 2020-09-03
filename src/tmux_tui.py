@@ -193,7 +193,7 @@ class tmux_helper(object):
             self.session = self.server.new_session(TMUX_SESSION_NAME)
         return self.session
     
-    def launch_tr(self, team, color, manual_vel, ds4_name):
+    def launch_tr(self, team, color, manual_vel, auto_vel, ds4_name):
         # t = self.server
         s = self.find_session()
         w = s.windows[0]
@@ -202,7 +202,7 @@ class tmux_helper(object):
         w.split_window(vertical=True, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="2")
-        w.split_window(vertical=True, attach=False, target="2")
+        w.split_window(vertical=True,MAX_SPEED attach=False, target="2")
         panes = w.list_panes()
         panes[2].send_keys('killall -9 rosmaster', enter=True, suppress_history=False)
         panes[2].send_keys('roscore', enter=True, suppress_history=False)
@@ -223,7 +223,7 @@ class tmux_helper(object):
         panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch color:=%s'%color, suppress_history=False)
         time.sleep(1.0)
 
-        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
+        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f auto_vel:=%f'%(team, color, ds4_name, manual_vel, auto_vel), suppress_history=False)
         time.sleep(1.0)
 
         panes[3].send_keys('rosbag record -a -o /home/m2/bags/', enter=True, suppress_history=False)
@@ -268,7 +268,7 @@ class MainForm(npyscreen.ActionFormV2):
         _rely += 2
         self.auto_vel = self.add(ProperTitleSider, name="Auto MAX speed:",
             value=4.5, out_of=5.5, lowest=2.0, step=0.1, 
-            max_width=70, rely=_rely,
+            max_width=70, rely=_rely,MAX_SPEED
         )
         _rely += 3
         self.manual_vel = self.add(ProperTitleSider, name="Manual MAX speed:",
@@ -330,6 +330,7 @@ class MainForm(npyscreen.ActionFormV2):
                 self.th.launch_tr(team=self.team.get_selected_objects()[0],
                                 color=self.color.get_selected_objects()[0],
                                 manual_vel=self.manual_vel.value,
+                                auto_vel=self.auto_vel.value,
                                 ds4_name=self.ds4_name.get_selected_objects()[0]) # Spwan some threads to do tmux stuff
                 self.parentApp.setNextForm("FORM2")
 
