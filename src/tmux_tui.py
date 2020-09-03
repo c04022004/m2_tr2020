@@ -226,7 +226,7 @@ class tmux_helper(object):
         panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
         time.sleep(1.0)
 
-        panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
+        panes[3].send_keys('rosbag record -a -o /home/m2/bags/', enter=True, suppress_history=False)
     
     def relaunch(self, pane_id):
         s = self.find_session()
