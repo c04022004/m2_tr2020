@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name = "ip_addr"/>
+  <arg name = "ip_addr" default="10.42.0.1"/>
 
   <node name="wifi_client" pkg="m2_wireless_comm" type="client.py" output="screen" >
     <param name="SERVER_IP" value="$(arg ip_addr)" />

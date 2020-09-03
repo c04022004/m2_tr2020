@@ -170,7 +170,7 @@ def ps4_cb(ps4_data): # update ps4 data
 
     elif control_mode == SEMI_AUTO:
         # control offset at reciving position, vel fixed at 1.8ms^-1
-        offset_speed = 1.8
+        offset_speed = 2.0
         global_vel = Twist()
         ff_req = SetFfRequest([])
         if match_color == MATCH_RED:
@@ -180,10 +180,10 @@ def ps4_cb(ps4_data): # update ps4 data
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
             # limit the vel by odom_pos
             if odom_pos != None:
-                if odom_pos["x"] > 1.5-0.6:
+                if odom_pos["x"] > 1.57-0.6:
                     global_vel.linear.x = min(0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 0.6:
+                if odom_pos["x"] < 0.67:
                     global_vel.linear.x = max(-0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
         elif match_color == MATCH_BLUE:
@@ -193,10 +193,10 @@ def ps4_cb(ps4_data): # update ps4 data
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
             # limit the vel by odom_pos
             if odom_pos != None:
-                if odom_pos["x"] > 13.3-(1.5-0.60):
+                if odom_pos["x"] > 13.3-(1.57-0.60):
                     global_vel.linear.x = min(0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 13.3-0.6:
+                if odom_pos["x"] < 13.3-0.67:
                     global_vel.linear.x = max(-0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
 
@@ -262,7 +262,6 @@ def ps4_cb(ps4_data): # update ps4 data
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 1
             fulltask_pub.publish(goal)
-            print("ts1")
         if ps4_data.triangle and not old_data.triangle: # tryspot2
             goal = FulltaskActionGoal()
             goal.goal.scene_id = 2
@@ -291,8 +290,7 @@ def ps4_cb(ps4_data): # update ps4 data
             if match_color == MATCH_RED:
                 # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 6
-                # fulltask_pub.publish(goal)
+                goal.goal.scene_id = 6 # no pub cuz too dangerous
             elif match_color == MATCH_BLUE:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
@@ -307,8 +305,7 @@ def ps4_cb(ps4_data): # update ps4 data
             elif match_color == MATCH_BLUE:
                 # back to start zone (TRSZ)
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 6
-                # fulltask_pub.publish(goal)
+                goal.goal.scene_id = 6 # no pub cuz too dangerous
 
     old_data = ps4_data
 

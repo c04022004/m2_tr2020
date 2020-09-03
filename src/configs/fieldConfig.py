@@ -24,10 +24,10 @@ def phrase_color_from_launch():
 
 def phrase_team_from_launch():
     team = rospy.get_param("~team", "rx")
-    if team == "rx":
+    if team == "rtx":
         rospy.loginfo("%s started with ROBOT_TR1"%rospy.get_name())
         return ROBOT_TR1
-    elif team == "rtx":
+    elif team == "rx":
         rospy.loginfo("%s started with ROBOT_TR2"%rospy.get_name())
         return ROBOT_TR2
     else:

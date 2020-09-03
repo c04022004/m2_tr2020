@@ -5,7 +5,7 @@ from m2_move_base.msg import *
 from .fieldConfig import *
 from .commConfig import *
 
-MAX_SPEED = 4.0
+MAX_SPEED = 1.8
 
 POINT_S = (0.5, 9.5)
 POINT_A = (0.8, 0.48)   # 1st ball pass (to TS3)

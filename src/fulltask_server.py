@@ -31,7 +31,8 @@ class FulltaskSceneHandler(object):
 
         self.dji_client = actionlib.SimpleActionClient('dji_try_server', TryAction)
         if robot_type == ROBOT_TR2:
-            self.dji_client.wait_for_server()
+            if not self.dji_client.wait_for_server(timeout=rospy.Duration(0.5)):
+                rospy.logerr("No dji server avalible!")
 
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)

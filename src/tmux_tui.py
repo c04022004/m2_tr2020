@@ -215,9 +215,9 @@ class tmux_helper(object):
         time.sleep(0.25)
 
         if team == "rx":
-            panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
-        elif team == "rtx":
             panes[4].send_keys('roslaunch m2_tr2020 base_hw_djimotor.launch', suppress_history=False)
+        elif team == "rtx":
+            panes[4].send_keys('roslaunch m2_tr2020 base_hw_pneumatic.launch', suppress_history=False)
         time.sleep(1.0)
 
         panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch color:=%s'%color, suppress_history=False)

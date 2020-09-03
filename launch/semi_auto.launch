@@ -35,13 +35,13 @@
         <param name="color" type="str" value="$(arg color)" />
     </node>
 
-    <!-- Only launching this node when team is rtx(TR2) -->
+    <!-- Only launching this node when team is rx(TR2) -->
     <node name = "dji_try_server" 
         pkg = "m2_tr2020"
         type = "dji_try_action.py"
         output = "screen"
         respawn = "true"
-        if="$(eval team == 'rtx')">
+        if="$(eval team == 'rx')">
     </node>
 
     <node name = "led_ctrl"
@@ -53,5 +53,9 @@
         <param name="color" type="str" value="$(arg color)" />
         <param name="chassis_odom_topic" type="str" value="$(arg chassis_odom_topic)" />
     </node>
+
+    <include file = "$(find m2_tr2020)/launch/comm_client.launch">
+        <!-- <arg name = "ip_addr" value=""/> -->
+    </include>
 
 </launch>
