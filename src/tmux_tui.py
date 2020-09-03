@@ -33,7 +33,7 @@ def npyscr_notify_terminal(cmd, args, timeout=10, backlog_size=10):
             except pexpect.TIMEOUT:
                 pass
             remaining_time = round(start + timeout - time.time())
-            npyscreen.notify("\n".join(backlog), title=f"{cmd} {args} [{remaining_time}s]", wide=True)
+            npyscreen.notify("\n".join(backlog), title="{cmd} {args} [{remaining_time}s]", wide=True)
         proc.terminate(force=True)
 
 class connectButton(npyscreen.ButtonPress):
@@ -188,12 +188,12 @@ class tmux_helper(object):
     
     def find_session(self):
         if self.server.has_session(TMUX_SESSION_NAME):
-            self.session = self.server.find_where({ "session_name": TMUX_SESSION_NAME})
+            self.session = self.server.find_where({ "session_name": TMUX_SESSION_NAME })
         else:
             self.session = self.server.new_session(TMUX_SESSION_NAME)
         return self.session
     
-    def launch_tr(self, team, color, manual_vel, ds4_name):
+    def launch_tr(self, team, color, manual_vel, auto_vel, ds4_name):
         # t = self.server
         s = self.find_session()
         w = s.windows[0]
@@ -223,7 +223,7 @@ class tmux_helper(object):
         panes[0].send_keys('roslaunch m2_tr2020 localization_control.launch color:=%s'%color, suppress_history=False)
         time.sleep(1.0)
 
-        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f'%(team, color, ds4_name, manual_vel), suppress_history=False)
+        panes[1].send_keys('roslaunch m2_tr2020 semi_auto.launch team:=%s color:=%s joy:=/dev/%s manual_vel:=%f auto_vel:=%f'%(team, color, ds4_name, manual_vel, auto_vel), suppress_history=False)
         time.sleep(1.0)
 
         panes[3].send_keys('rosbag record -a', enter=True, suppress_history=False)
@@ -330,6 +330,7 @@ class MainForm(npyscreen.ActionFormV2):
                 self.th.launch_tr(team=self.team.get_selected_objects()[0],
                                 color=self.color.get_selected_objects()[0],
                                 manual_vel=self.manual_vel.value,
+                                auto_vel=self.auto_vel.value,
                                 ds4_name=self.ds4_name.get_selected_objects()[0]) # Spwan some threads to do tmux stuff
                 self.parentApp.setNextForm("FORM2")
 

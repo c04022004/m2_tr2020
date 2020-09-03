@@ -15,7 +15,6 @@ from std_msgs.msg import Float32
 import time
 import numpy as np
 from numpy import pi
-from configs.pursuitConfig import *
 from configs.fieldConfig import *
 from configs.commConfig import *
 
@@ -360,6 +359,7 @@ if __name__ == "__main__":
     rospy.init_node('tr_server')
     match_color = phrase_color_from_launch()
     robot_type = phrase_team_from_launch()
+    from configs.pursuitConfig import *
     if match_color == None:
         exit(1)
     for c in cfg.values():
