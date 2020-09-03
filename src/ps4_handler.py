@@ -193,10 +193,10 @@ def ps4_cb(ps4_data): # update ps4 data
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
             # limit the vel by odom_pos
             if odom_pos != None:
-                if odom_pos["x"] > 13.3-(1.57-0.60):
+                if odom_pos["x"] > 13.3-0.67:
                     global_vel.linear.x = min(0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 13.3-0.67:
+                if odom_pos["x"] < 13.3-(1.57-0.60):
                     global_vel.linear.x = max(-0.1,global_vel.linear.x)
                     ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
 
@@ -211,7 +211,7 @@ def ps4_cb(ps4_data): # update ps4 data
 
         # Publish velocity if manual offset is non-zero
         global is_offset
-        if not np.isclose(vel_magnitude,0.0):
+        if not (np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0)):
             is_offset = True
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear

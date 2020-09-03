@@ -179,9 +179,9 @@ class FulltaskSceneHandler(object):
     def hook1(self):
         if robot_type == ROBOT_TR2:
             self.dji_client.send_goal(TryGoal(scene_id=2)) # Pre-lift the rugby
-            if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
+            if self.delayed_slider_thread != None and self.delayed_slider_thread.is_alive():
                 self.delayed_slider_thread.cancel()
-            self.delayed_slider_thread = threading.Timer(0.1, self.unlock_ball)
+            self.delayed_slider_thread = threading.Timer(0.25, self.unlock_ball)
             self.delayed_slider_thread.start()
 
     def hook2(self):
@@ -191,7 +191,7 @@ class FulltaskSceneHandler(object):
         pass
 
     def comm_pr_try_done(self,pr_arg):
-        if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.isAlive():
+        if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.is_alive():
             self.delayed_call_pr_thread.cancel()
         self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(pr_arg,))
         self.delayed_call_pr_thread.start()
@@ -226,15 +226,15 @@ class FulltaskSceneHandler(object):
         try:
             response = self.icp_srv()
             icp_estimate, ref_odom, error_metrics = self.icp_decode(response)
-            # Sanity Check before setting odom
+            # Sanity Check before setting odom, 
             dist = np.hypot(icp_estimate['x']-ref_odom['x'],icp_estimate['y']-ref_odom['y'])
-            if dist<0.2 and error_metrics['mae'] < 0.01 and error_metrics['rmse'] < 0.01:
+            if dist<0.35 and error_metrics['mae'] < 0.015 and error_metrics['rmse'] < 0.015:
                 self.set_x_pub.publish(icp_estimate['x'])
                 self.set_y_pub.publish(icp_estimate['y'])
             else:
                 rospy.logwarn("Cannot pass SAN check, skip renewing odom!!")
             self.try_event.clear()
-            self.try_event.wait(0.5) # Wait for the PID to correct the position
+            self.try_event.wait(0.1) # Wait for the PID to correct the position
             if self.as_check_preempted(): return
         except rospy.ServiceException as e:
             rospy.logerr(e)
@@ -243,11 +243,13 @@ class FulltaskSceneHandler(object):
             self.try_event.clear()
             self.try_event.wait(0.8)
             if self.as_check_preempted(): return
-            if self.delayed_lifter_thread != None and self.delayed_lifter_thread.isAlive():
+            if self.delayed_lifter_thread != None and self.delayed_lifter_thread.is_alive():
                 self.delayed_lifter_thread.cancel()
             self.delayed_lifter_thread = threading.Timer(0.05, self.ball_guard)
             self.delayed_lifter_thread.start()
-            time.sleep(0.5)
+            self.try_event.clear()
+            self.try_event.wait(0.5)
+            if self.as_check_preempted(): return
         elif robot_type == ROBOT_TR2:
             self.io_pub_slider.publish(1)
             slider_retry_count = 0
@@ -265,7 +267,7 @@ class FulltaskSceneHandler(object):
             self.dji_client.send_goal(TryGoal(scene_id=4))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
 
-            if self.delayed_slider_thread != None and self.delayed_slider_thread.isAlive():
+            if self.delayed_slider_thread != None and self.delayed_slider_thread.is_alive():
                 self.delayed_slider_thread.cancel()
             self.delayed_slider_thread = threading.Timer(2.0, self.ball_guard)
             self.delayed_slider_thread.start()
