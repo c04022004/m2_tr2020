@@ -26,12 +26,14 @@ void ctrl_alt_f1();
 void ctrl_alt_f2();
 void ctrl_alt_f3();
 void python_command();
-void nothing(); //it is not used, handled in callback
 void page_up();
 void page_down();
 void launch_ui();
 void tmux_z();
 void tab();
+void esc();
+//it is not used, handled in callback(state transition only?)
+void nothing(); 
 //---   END prototypes   ---
 
 
@@ -43,7 +45,7 @@ struct keyType {
   function_ptr function;   //15,0,4,8,15, 2,1,3,7,5
 };
 
-#define key_count 22
+#define key_count 23
 //!!!!!! all keys display characters and functions stored here, value assignment in setup()
 keyType *key = new keyType[key_count]; 
 keyType *mykeys = new keyType[10]; // all the 10 keys of the current mode
@@ -53,7 +55,7 @@ char keySymbol[key_count][2] = {
   {'E', 'n'}, {94, 'B'}, {94, 'C'}, {94, 'D'}, {'m','2'},
   {'T', 'm'}, {'F','1'}, {'F','2'}, {'F','3'}, {'P','y'},
   {240, ' '}, {219,' '}, {'P','U'}, {'P','D'}, {'U','I'},
-  {'Z', 'm'}, {27 , 26}};
+  {'Z', 'm'}, {27 , 26}, {19 ,' '}};
 //store key functions in this array
 void (*keyFunction[key_count])() = {
   arrow_up, arrow_down, arrow_left, arrow_right, spacebar,
@@ -219,7 +221,7 @@ void normal_layout() {
   mykeys[1] = key[0];
   mykeys[2] = key[4];
   mykeys[3] = key[6];
-  mykeys[4] = key[16];
+  mykeys[4] = key[22];
   mykeys[5] = key[2];
   mykeys[6] = key[1];
   mykeys[7] = key[3];
@@ -431,11 +433,12 @@ void launch_ui() {
   Keyboard.releaseAll();delay(100);
 
   // kill everything, including tmux
-  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99); // ctrl-c
-  delay(10); Keyboard.releaseAll();
-  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(98); // ctrl-b
-  delay(10); Keyboard.releaseAll();
-  Keyboard.println(":exit"); delay(10);
+  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99);
+  delay(10); Keyboard.releaseAll(); // ctrl-c
+  delay(50);Keyboard.println("tmux a -t robocon_2020");delay(100);
+  Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(98);
+  delay(10); Keyboard.releaseAll(); // ctrl-b + :kill-session
+  Keyboard.println(":kill-session"); delay(100);
   for(int i=0;i<2;i++){
     Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(99); // ctrl-c
     delay(10); Keyboard.releaseAll();
@@ -445,8 +448,6 @@ void launch_ui() {
 
   // launch tmux tr_2020 session
   delay(100);Keyboard.println("tmux new -s robocon_2020");delay(100);
-  //delay(100);Keyboard.println("mkdir -p ~/bags");
-  //delay(100);Keyboard.println("cd ~/bags");
 
   // goto tty3
   Keyboard.press(KEY_LEFT_CTRL);
@@ -461,6 +462,10 @@ void launch_ui() {
     Keyboard.press(KEY_LEFT_CTRL);Keyboard.press(100); // ctrl-d
     delay(10); Keyboard.releaseAll();
   }
+  delay(100);Keyboard.println("killall python");
+  delay(100);Keyboard.println("killall roscore");
+
+  // actually launch the stuff
   delay(100);Keyboard.println("python ~/tmux_tui.py");
   kbl=NORMAL;displayfunc();
 }
@@ -478,4 +483,10 @@ void tab(){
   Keyboard.press(KEY_TAB); display.invertDisplay(true);
   delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
 }
+
+void esc(){
+  Keyboard.press(KEY_ESC); display.invertDisplay(true);
+  delay(10); Keyboard.releaseAll(); display.invertDisplay(false);
+}
+
 //---   END key functions   ---
