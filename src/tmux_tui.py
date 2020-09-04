@@ -349,14 +349,14 @@ def exit_handler():
             # i=len(panes)-i-1
             for i in range(4):
                 panes[pane_id].send_keys('^C', enter=False, suppress_history=False)
-                time.sleep(0.02)
+                time.sleep(0.1)
             for i in range(4):
                 panes[pane_id].send_keys('^Z', enter=False, suppress_history=False)
-                time.sleep(0.02)
+                time.sleep(0.1)
             time.sleep(0.1)
             for i in range(4):
                 panes[pane_id].send_keys('kill -9 %1 %2 %3', enter=True, suppress_history=True)
-                time.sleep(0.02)
+                time.sleep(0.1)
             time.sleep(0.1)
             if pane_id > 0:
                 panes[pane_id].send_keys("exit")

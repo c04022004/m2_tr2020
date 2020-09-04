@@ -190,7 +190,7 @@ class FulltaskSceneHandler(object):
     def hook3(self):
         pass
 
-    def comm_pr_try_done(self,pr_arg):
+    def comm_pr_can_lift(self,pr_arg):
         if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.is_alive():
             self.delayed_call_pr_thread.cancel()
         self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(pr_arg,))
