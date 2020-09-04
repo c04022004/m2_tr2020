@@ -340,12 +340,12 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None}],
+                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene1_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -369,12 +369,12 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None}],
+                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene2_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -398,12 +398,12 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.1},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None}],
+                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene3_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -427,12 +427,12 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None}],
+                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene4_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
                  'log_msg'   : "pid into receiving pos",},
-                {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
 
@@ -456,11 +456,13 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : None,}  ]
 
 # Setup trigger to pre-notify PR for passing rugby
-cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.05},thres=0.98)
-cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
-cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
-cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
-cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.00,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.05},thres=0.98)
+cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
+cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+# for (i,c) in [(3,'A'),(2,'B'),(1,'C'),(4,'E'),(5,'D')]:
+#    cfg['rec_pt%s_trig'%c] = 
 
 for i in range(1,6):
     try_param = globals()['try%d_param'%i]
