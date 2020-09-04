@@ -240,7 +240,7 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             self.try_event.clear()
-            self.try_event.wait(0.8)
+            self.try_event.wait(0.4)
             if self.as_check_preempted(): return
             if self.delayed_lifter_thread != None and self.delayed_lifter_thread.is_alive():
                 self.delayed_lifter_thread.cancel()
@@ -262,6 +262,7 @@ class FulltaskSceneHandler(object):
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
             self.try_event.clear()
             self.try_event.wait(0.4)
+            if self.as_check_preempted(): return
 
             self.dji_client.send_goal(TryGoal(scene_id=4))
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")

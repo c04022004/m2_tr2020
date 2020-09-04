@@ -283,8 +283,8 @@ for i in range(1,6): # slightly slanted orientation
 # Meeting significant motor limit here, must use all 4 motors (and less air resistance)
 
 # Setup try tolerances (x,y) 
-tryx_tol = abs(0.1/2)
-tryy_tol = abs(0.08/2)
+tryx_tol = abs(0.15/2)
+tryy_tol = abs(0.10/2)
 for i in range(1,6):
     pt = globals()['POINT_%d'%i]
     cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.99)
@@ -456,27 +456,24 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : None,}  ]
 
 # Setup trigger to pre-notify PR for passing rugby
-cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
-cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-# for (i,c) in [(3,'A'),(2,'B'),(1,'C'),(4,'E'),(5,'D')]:
-#    cfg['rec_pt%s_trig'%c] = 
-
-for i in range(1,6):
-    try_param = globals()['try%d_param'%i]
-    if try_param[3] != None and cfg[try_param[3]['cfg_name']] != None:
-        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_A:
-            try_param[4]['trig_name'] = "rec_ptA_trig"
-        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_B:
-            try_param[4]['trig_name'] = "rec_ptB_trig"
-        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_C:
-            try_param[4]['trig_name'] = "rec_ptC_trig"
-        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_D:
-            try_param[4]['trig_name'] = "rec_ptD_trig"
-        if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_E:
-            try_param[4]['trig_name'] = "rec_ptE_trig"
+# cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
+# cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+# cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+# cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+# cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
+# for i in range(1,6):
+#     try_param = globals()['try%d_param'%i]
+#     if try_param[3] != None and cfg[try_param[3]['cfg_name']] != None:
+#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_A:
+#             try_param[4]['trig_name'] = "rec_ptA_trig"
+#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_B:
+#             try_param[4]['trig_name'] = "rec_ptB_trig"
+#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_C:
+#             try_param[4]['trig_name'] = "rec_ptC_trig"
+#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_D:
+#             try_param[4]['trig_name'] = "rec_ptD_trig"
+#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_E:
+#             try_param[4]['trig_name'] = "rec_ptE_trig"
 
 try6_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene6_f',
