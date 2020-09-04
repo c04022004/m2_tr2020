@@ -5,9 +5,8 @@ from m2_move_base.msg import *
 from .fieldConfig import *
 from .commConfig import *
 
-# MAX_SPEED = 4.5
 MAX_SPEED = rospy.get_param("~max_speed", 3.5)
-print("Robot get speed ", MAX_SPEED)
+rospy.loginfo("Pursuit config MAX_SPEED: %.2f", MAX_SPEED)
 
 POINT_S = (0.5, 9.5)
 POINT_A = (0.8, 0.48)   # 1st ball pass (to TS3)
@@ -422,7 +421,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'do_try':None}],
                  'cfg_name'  : None,
                  'log_msg'   : "do_try for Try Spot 4",},
-                {'hook_func' : [{'comm_pr_can_clip':[CAN_CLIP_PT_D]}],
+                {'hook_func' : [{'comm_pr_can_lift':[CAN_CLIP_PT_D]}],
                  'cfg_name'  : 'scene4_b',
                  'cfg_param' : {'speed':MAX_SPEED*0.9, 'radius':2.0, 'stop_min_speed':0.75,
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},

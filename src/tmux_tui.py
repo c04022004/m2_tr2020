@@ -202,7 +202,7 @@ class tmux_helper(object):
         w.split_window(vertical=True, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="0")
         w.split_window(vertical=False, attach=False, target="2")
-        w.split_window(vertical=True,MAX_SPEED attach=False, target="2")
+        w.split_window(vertical=True, attach=False, target="2")
         panes = w.list_panes()
         panes[2].send_keys('killall -9 rosmaster', enter=True, suppress_history=False)
         panes[2].send_keys('roscore', enter=True, suppress_history=False)
@@ -268,7 +268,7 @@ class MainForm(npyscreen.ActionFormV2):
         _rely += 2
         self.auto_vel = self.add(ProperTitleSider, name="Auto MAX speed:",
             value=4.5, out_of=5.5, lowest=2.0, step=0.1, 
-            max_width=70, rely=_rely,MAX_SPEED
+            max_width=70, rely=_rely,
         )
         _rely += 3
         self.manual_vel = self.add(ProperTitleSider, name="Manual MAX speed:",
