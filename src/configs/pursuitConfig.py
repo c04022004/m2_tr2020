@@ -125,7 +125,8 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         self.chk_pts = [Point(x=(13.3 - point[0]), y=point[1]) for point in self.raw_pts]
         self.target_z = -self.target_z
 
-    def goalConstructor(self, speed=2.0, radius=1.0, stop_min_speed=0.5, velocity_shift_kP=6.0, curvature_penalty_kP=0.4):
+    def goalConstructor(self, speed=2.0, radius=1.0, stop_min_speed=0.5, 
+                        velocity_shift_kP=6.0, curvature_penalty_kP=0.4, accel_lim=5.5):
         pure_pursuit_data = PurePursuitData()
         pure_pursuit_data.label = self.spline_label
         pure_pursuit_data.spline_type = self.spline_type
@@ -134,6 +135,7 @@ class PurePursuitConfig: # Default setting of MATCH_RED
         pure_pursuit_data.point_density = self.point_density
         
         pure_pursuit_data.velocity_xy_magnitude = speed
+        # pure_pursuit_data.accel_limit = accel_lim
 
         pure_pursuit_data.velocity_z_kP = self.velocity_z_kP
         pure_pursuit_data.velocity_z_kI = self.velocity_z_kI
@@ -187,7 +189,7 @@ class PurePidConfig: # Default setting of MATCH_RED
         self.target_x = 13.3 - self.target_x
         self.target_z = -self.target_z
 
-    def goalConstructor(self, speed, kP, kI, kD, PonE=True, accel_lim=10.0):
+    def goalConstructor(self, speed, kP, kI, kD, PonE=True, accel_lim=5.5):
         pure_pid_data = PurePidData()
         pure_pid_data.label = self.label
 
@@ -429,7 +431,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
 try4_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene4_f',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':2.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 4",},
                 {'hook_func' : [{'hook1':None}],
@@ -463,7 +465,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
 try5_param = [  {'hook_func' : [{'hook0':None}],
                  'cfg_name'  : 'scene5_f',
                  'cfg_param' : {'speed':MAX_SPEED*0.8, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.8},
+                                'velocity_shift_kP':2.0, 'curvature_penalty_kP':0.8},
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 5",},
                 {'hook_func' : [{'hook1':None}],
