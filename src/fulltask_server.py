@@ -234,7 +234,7 @@ class FulltaskSceneHandler(object):
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             self.try_event.clear()
-            self.try_event.wait(0.4)
+            self.try_event.wait(0.8)
             if self.as_check_preempted(): return
             if self.delayed_lifter_thread != None and self.delayed_lifter_thread.is_alive():
                 self.delayed_lifter_thread.cancel()
@@ -346,12 +346,12 @@ class FulltaskSceneHandler(object):
 
     def execute_cb(self, goal):
         # print(goal)
-        if goal.scene_id in range(9):
+        if goal.scene_id in range(16):
+            if goal.scene_id in [10]:
+                return #self.sample_scene()
             id = goal.scene_id
             param = globals()['try%d_param'%id]
             self.scene_func(id, param)
-        if (goal.scene_id == 9):
-            self.sample_scene()
 
 if __name__ == "__main__":
     rospy.init_node('tr_server')

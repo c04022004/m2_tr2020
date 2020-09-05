@@ -12,7 +12,7 @@ POINT_S = (0.5, 9.5)
 POINT_A = (0.8, 0.48)   # 1st ball pass (to TS3)
 POINT_B = (0.92, 3.2)   # 2nd ball pass (to TS2)
 POINT_C = (1.12, 3.7)   # 3rd ball pass (to TS1)
-POINT_D = (0.92, 4.5)   # 5th ball pass (to TS5
+POINT_D = (0.92, 4.5)   # 5th ball pass (to TS5)
 POINT_E = (0.92, 5.3)   # 4th ball pass (to TS4)
 
 # end-pt x 6150 - 300(half robot) - 40(protector) 
@@ -524,6 +524,84 @@ try8_param = [  {'hook_func' : None,
                  'log_msg'   : "start running for PointD",},
                 {'hook_func' : None,
                  'cfg_name'  : 'scene1_bs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try9_param = [  {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointA",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene0_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try13_param = [ {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointA",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene0_fs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try12_param = [ {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointB",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene3_bs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try11_param = [ {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointB",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene2_bs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try14_param = [ {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointE",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene1_bs',
+                 'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
+                 'trig_name' : "default_trig",
+                 'log_msg'   : "breaking stage before PointD",},
+                None, None, None, None,
+                {'hook_func' : [{'ball_guard':None}],
+                 'cfg_name'  : None,
+                 'log_msg'   : None,}  ]
+
+try15_param = [ {'hook_func' : None,
+                 'cfg_name'  : None,
+                 'log_msg'   : "start running for PointE",},
+                {'hook_func' : None,
+                 'cfg_name'  : 'scene4_bs',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointD",},

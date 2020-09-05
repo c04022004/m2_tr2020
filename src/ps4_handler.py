@@ -258,34 +258,56 @@ def ps4_cb(ps4_data): # update ps4 data
                     dji_try_pub.publish(goal)
 
     elif control_mode == SEMI_AUTO:
-        if ps4_data.options and not old_data.options: # tryspot1
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 1
-            fulltask_pub.publish(goal)
-        if ps4_data.triangle and not old_data.triangle: # tryspot2
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 2
-            fulltask_pub.publish(goal)
-        if ps4_data.circle and not old_data.circle: # tryspot3
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 3
-            fulltask_pub.publish(goal)
-        if ps4_data.cross and not old_data.cross: # tryspot4
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 4
-            fulltask_pub.publish(goal)
-        if ps4_data.square and not old_data.square: # tryspot5
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 5
-            fulltask_pub.publish(goal)
-        if (ps4_data.dpad_y == -1) and not old_data.dpad_y: # pointC
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 7
-            fulltask_pub.publish(goal)
-        if (ps4_data.dpad_y ==  1) and not old_data.dpad_y: # pointD
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 8
-            fulltask_pub.publish(goal)
+        if not ps4_data.r1:
+            if ps4_data.options and not old_data.options: # tryspot1
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 1
+                fulltask_pub.publish(goal)
+            if ps4_data.triangle and not old_data.triangle: # tryspot2
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 2
+                fulltask_pub.publish(goal)
+            if ps4_data.circle and not old_data.circle: # tryspot3
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 3
+                fulltask_pub.publish(goal)
+            if ps4_data.cross and not old_data.cross: # tryspot4
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 4
+                fulltask_pub.publish(goal)
+            if ps4_data.square and not old_data.square: # tryspot5
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 5
+                fulltask_pub.publish(goal)
+        else:
+            if ps4_data.options and not old_data.options: # tryspot1
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 11
+                fulltask_pub.publish(goal)
+            if ps4_data.triangle and not old_data.triangle: # tryspot2
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 12
+                fulltask_pub.publish(goal)
+            if ps4_data.circle and not old_data.circle: # tryspot3
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 13
+                fulltask_pub.publish(goal)
+            if ps4_data.cross and not old_data.cross: # tryspot4
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 14
+                fulltask_pub.publish(goal)
+            if ps4_data.square and not old_data.square: # tryspot5
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 15
+                fulltask_pub.publish(goal)
+
+        POINT_S = {'x': 0.5, 'y': 9.50}
+        POINT_A = {'x': 0.8, 'y': 0.48}
+        def dist_to_PT(pt, odom):
+            dx = pt['x'] - odom['x']
+            dy = pt['y'] - odom['y']
+            return np.hypot(dx,dy)
+
         if (ps4_data.dpad_x == 1) and not old_data.dpad_x: # back to start zone
             if match_color == MATCH_RED:
                 # back to start zone (TRSZ)
@@ -294,13 +316,19 @@ def ps4_cb(ps4_data): # update ps4 data
             elif match_color == MATCH_BLUE:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 0
+                if dist_to_PT(POINT_S,odom_pos)<2.0:
+                    goal.goal.scene_id = 0
+                elif dist_to_PT(POINT_A,odom_pos)<4.0:
+                    goal.goal.scene_id = 9
                 fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == -1) and not old_data.dpad_x: # back to start zone
             if match_color == MATCH_RED:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 0
+                if dist_to_PT(POINT_S,odom_pos)<2.0:
+                    goal.goal.scene_id = 0
+                elif dist_to_PT(POINT_A,odom_pos)<4.0:
+                    goal.goal.scene_id = 9
                 fulltask_pub.publish(goal)
             elif match_color == MATCH_BLUE:
                 # back to start zone (TRSZ)
