@@ -456,7 +456,7 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : None,}  ]
 
 # Setup trigger to pre-notify PR for passing rugby
-# cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
+cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
 # cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
 # cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
 # cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
