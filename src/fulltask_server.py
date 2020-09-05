@@ -36,6 +36,7 @@ class FulltaskSceneHandler(object):
         self.io_pub_latch = rospy.Publisher('io_board1/io_7/set_state', Bool, queue_size=1) # try latch release/retract (io_7)
         self.io_pub_slider = rospy.Publisher('io_board1/io_0/set_state', Bool, queue_size=1) # try slider release/retract (io_0)
         self.io_sub_slider = rospy.Subscriber('io_board1/io_3/get_state', Bool, self.slider_cb)
+        self.slider_pos = False
         self.delayed_lifter_thread = None
         self.delayed_slider_thread = None
         self.delayed_call_pr_thread = None
@@ -183,27 +184,18 @@ class FulltaskSceneHandler(object):
             self.delayed_slider_thread = threading.Timer(0.25, self.unlock_ball)
             self.delayed_slider_thread.start()
 
-    def hook2(self):
-        pass
-
-    def hook3(self):
-        pass
-
     def comm_pr_can_lift(self,pr_arg):
         if self.delayed_call_pr_thread != None and self.delayed_call_pr_thread.is_alive():
             self.delayed_call_pr_thread.cancel()
         self.delayed_call_pr_thread = threading.Timer(0.2, self.call_pr, args=(pr_arg,))
         self.delayed_call_pr_thread.start()
 
-    def hook4(self):
+    def post_try_seq(self):
         if robot_type == ROBOT_TR2:
             self.dji_client.send_goal(TryGoal(scene_id=0))
             self.dji_client.wait_for_result()
             self.as_state_decode(self.dji_client.get_state(),"dji_try_server")
         self.ball_guard()
-
-    def hook5(self):
-        pass
 
     def icp_decode(self, msg):
         icp_estimate  = {'x': msg.estimated_pose.position.x, 'y':msg.estimated_pose.position.y}
@@ -214,14 +206,7 @@ class FulltaskSceneHandler(object):
             error_metrics['mae'], error_metrics['rmse'],))
         return icp_estimate, ref_odom, error_metrics
 
-    def do_try(self):
-        if robot_type == ROBOT_NONE:
-            rospy.logwarn("If you are not using fake_robot, go check your code!")
-            rospy.logwarn("Default to a 1.5 second sleep when ROBOT_NONE is set!")
-            self.try_event.clear()
-            self.try_event.wait(1.5)
-            self.as_check_preempted()
-            return
+    def do_lidar(self):
         try:
             response = self.icp_srv()
             icp_estimate, ref_odom, error_metrics = self.icp_decode(response)
@@ -237,6 +222,15 @@ class FulltaskSceneHandler(object):
             if self.as_check_preempted(): return
         except rospy.ServiceException as e:
             rospy.logerr(e)
+
+    def do_try(self):
+        if robot_type == ROBOT_NONE:
+            rospy.logwarn("If you are not using fake_robot, go check your code!")
+            rospy.logwarn("Default to a 1.5 second sleep when ROBOT_NONE is set!")
+            self.try_event.clear()
+            self.try_event.wait(1.5)
+            self.as_check_preempted()
+            return
         if robot_type == ROBOT_TR1:
             self.io_pub_latch.publish(1)
             self.try_event.clear()
@@ -316,8 +310,8 @@ class FulltaskSceneHandler(object):
         rospy.loginfo("Fulltask scene %d start!"% scene_num)
         start_time = time.time()
 
-        # --- Try sequence - stage0~4 ---
-        for i in range(5):
+        # --- Try sequence - stage0~5 ---
+        for i in range(6):
             if params[i] != None:
                 # Processing the hooks
                 self.process_hooks(params[i]['hook_func'])
@@ -335,11 +329,11 @@ class FulltaskSceneHandler(object):
                     if self.as_check_preempted():
                         return
 
-        # --- Try sequence - stage5 ---
+        # --- Try sequence - stage6 ---
         # Processing the hooks
-        self.process_hooks(params[5]['hook_func'])
+        self.process_hooks(params[6]['hook_func'])
         self.path_finish_event.clear()
-        if params[5]['cfg_name'] != None:
+        if params[6]['cfg_name'] != None:
             rospy.logerr("Not suppose to run more path here!")
 
         rospy.loginfo("try done. time=%f"%(time.time()-start_time))

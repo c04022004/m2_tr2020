@@ -5,7 +5,7 @@ from m2_move_base.msg import *
 from .fieldConfig import *
 from .commConfig import *
 
-MAX_SPEED = rospy.get_param("~max_speed", 3.5)
+MAX_SPEED = rospy.get_param("~max_speed", 3.0)
 rospy.loginfo("Pursuit config MAX_SPEED: %.2f", MAX_SPEED)
 
 POINT_S = (0.5, 9.5)
@@ -17,6 +17,7 @@ POINT_E = (0.92, 5.3)   # 4th ball pass (to TS4)
 
 # end-pt x 6150 - 300(half robot) - 40(protector) 
 # end-pt y 3090 + 30(white line)  + 1300(offset)
+lidar_offset = 0.2 # stop for lidar scan
 tryx_offset = 0.05 # reserve for overshoot
 POINT_1 = (5.81-tryx_offset, 3.09+0.5*0.03+0*1.3)
 POINT_2 = (5.81-tryx_offset, 3.09+1.0*0.03+1*1.3)
@@ -253,6 +254,8 @@ cfg = {}
 for i in range(7):
     if CHK_PTS[i]['f_path'] != None:
         cfg['scene%d_f'%i]  = PurePursuitConfig(CHK_PTS[i]['curve'], CHK_PTS[i]['f_path'])
+        lidar_pos = (CHK_PTS[i]['f_path'][-1][0]-lidar_offset, CHK_PTS[i]['f_path'][-1][1])
+        cfg['scene%d_li'%i] = PurePidConfig(lidar_pos, -pi/2)
         cfg['scene%d_fs'%i] = PurePidConfig(CHK_PTS[i]['f_path'][-1], -pi/2)
     if CHK_PTS[i]['b_path'] != None:
         cfg['scene%d_b'%i]  = PurePursuitConfig(CHK_PTS[i]['curve'], CHK_PTS[i]['b_path'])
@@ -290,6 +293,7 @@ for i in range(1,6):
     cfg['ts%d_trig'%i] = BreakTrigger(x_min=pt[0]-tryx_tol,x_max=pt[0]+tryx_tol,y_min=pt[1]-tryy_tol,y_max=pt[1]+tryy_tol,thres=0.99)
 
 # Setup mode transition criteria
+# cfg['rp_pid_trig']  = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)
 cfg['try_pid_trig'] = BreakTrigger(x_min=5.1,x_max=6.65,y_min=0.0,y_max=10.0,thres=0.90)
 cfg['rec_pid_trig'] = BreakTrigger(x_min=0.0,x_max=1.50,y_min=0.0,y_max=10.0,thres= 0.90)
 cfg['mode_trig']    = BreakTrigger(thres=0.90)
@@ -315,7 +319,7 @@ try0_param = [  {'hook_func' : [{'call_pr':[START_COMMAND]}],
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5, 'accel_lim':5.5},
                  'trig_name' : 'rec_ptA_trig',
                  'log_msg'   : "breaking stage before receiving pos",},
-                None, None,
+                None, None, None,
                 {'hook_func' : [{'ball_guard':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
@@ -327,8 +331,13 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 1",},
                 {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene1_li',
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'trig_name' : 'mode_trig',
+                 'log_msg'   : "Triggering lidar detection",},
+                {'hook_func' : [{'do_lidar':None}],
                  'cfg_name'  : 'scene1_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.65, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts1_trig',
                  'log_msg'   : "breaking stage before Try Spot 1",},
                 {'hook_func' : [{'do_try':None}],
@@ -340,7 +349,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'post_try_seq':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene1_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
@@ -356,8 +365,13 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 2",},
                 {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene2_li',
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'trig_name' : 'mode_trig',
+                 'log_msg'   : "Triggering lidar detection",},
+                {'hook_func' : [{'do_lidar':None}],
                  'cfg_name'  : 'scene2_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.65, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts2_trig',
                  'log_msg'   : "breaking stage before Try Spot 2",},
                 {'hook_func' : [{"do_try":None}],
@@ -369,7 +383,7 @@ try2_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.4},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'post_try_seq':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene2_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
@@ -385,8 +399,13 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 3",},
                 {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene3_li',
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.001, 'kD':3.0, 'accel_lim':5.5},
+                 'trig_name' : 'mode_trig',
+                 'log_msg'   : "Triggering lidar detection",},
+                {'hook_func' : [{'do_lidar':None}],
                  'cfg_name'  : 'scene3_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.65, 'kP':2.0, 'kI':0.001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts3_trig',
                  'log_msg'   : "breaking stage before Try Spot 3",},
                 {'hook_func' : [{'do_try':None}],
@@ -398,7 +417,7 @@ try3_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':6.0, 'curvature_penalty_kP':0.1},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'post_try_seq':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene3_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
@@ -414,8 +433,13 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 4",},
                 {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene4_li',
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'trig_name' : 'mode_trig',
+                 'log_msg'   : "Triggering lidar detection",},
+                {'hook_func' : [{'do_lidar':None}],
                  'cfg_name'  : 'scene4_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.65, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts4_trig',
                  'log_msg'   : "breaking stage before Try Spot 4",},
                 {'hook_func' : [{'do_try':None}],
@@ -427,7 +451,7 @@ try4_param = [  {'hook_func' : [{'hook0':None}],
                                 'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.6},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
-                {'hook_func' : [{'hook4':None},{'call_pr':[CAN_PASS_COMMAND]}],
+                {'hook_func' : [{'post_try_seq':None},{'call_pr':[CAN_PASS_COMMAND]}],
                  'cfg_name'  : 'scene4_bs',
                  'trig_name' : 'default_trig',
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':2.0, 'kI':0.0001, 'kD':4.0, 'accel_lim':5.0},
@@ -443,8 +467,13 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'trig_name' : 'try_pid_trig',
                  'log_msg'   : "start running for Try Spot 5",},
                 {'hook_func' : [{'hook1':None}],
+                 'cfg_name'  : 'scene5_li',
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'trig_name' : 'mode_trig',
+                 'log_msg'   : "Triggering lidar detection",},
+                {'hook_func' : [{'do_trig':None}],
                  'cfg_name'  : 'scene5_fs',
-                 'cfg_param' : {'speed':MAX_SPEED*0.65, 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
+                 'cfg_param' : {'speed':min(MAX_SPEED*0.65,2.0), 'kP':2.0, 'kI':0.0001, 'kD':3.0, 'accel_lim':5.5},
                  'trig_name' : 'ts5_trig',
                  'log_msg'   : "breaking stage before Try Spot 5",},
                 {'hook_func' : [{'do_try':None}],
@@ -456,24 +485,8 @@ try5_param = [  {'hook_func' : [{'hook0':None}],
                  'log_msg'   : None,}  ]
 
 # Setup trigger to pre-notify PR for passing rugby
-cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
-# cfg['rec_ptB_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_B[0],'dest_y':POINT_B[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-# cfg['rec_ptC_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_C[0],'dest_y':POINT_C[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-# cfg['rec_ptD_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_D[0],'dest_y':POINT_D[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-# cfg['rec_ptE_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_E[0],'dest_y':POINT_E[1],'kP':2.0,'kD':4.0,'vel':MAX_SPEED*0.50,'dz':0.10},thres=0.98)
-# for i in range(1,6):
-#     try_param = globals()['try%d_param'%i]
-#     if try_param[3] != None and cfg[try_param[3]['cfg_name']] != None:
-#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_A:
-#             try_param[4]['trig_name'] = "rec_ptA_trig"
-#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_B:
-#             try_param[4]['trig_name'] = "rec_ptB_trig"
-#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_C:
-#             try_param[4]['trig_name'] = "rec_ptC_trig"
-#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_D:
-#             try_param[4]['trig_name'] = "rec_ptD_trig"
-#         if cfg[try_param[3]['cfg_name']].raw_pts[-1] == POINT_E:
-#             try_param[4]['trig_name'] = "rec_ptE_trig"
+cfg['rec_ptA_trig'] = BreakTrigger(eta={'time':1.0,'dest_x':POINT_A[0],'dest_y':POINT_A[1],
+                        'kP':3.0,'kD':2.5,'vel':MAX_SPEED*0.40,'dz':0.10},thres=0.98)
 
 try6_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : 'scene6_f',
@@ -486,7 +499,7 @@ try6_param = [  {'hook_func' : [{'ball_guard':None}],
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before TRSZ",},
-                None, None, None,
+                None, None, None, None,
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
@@ -499,7 +512,7 @@ try7_param = [  {'hook_func' : None,
                  'cfg_param' : {'speed':MAX_SPEED*0.6, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointC",},
-                None, None, None,
+                None, None, None, None,
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]
@@ -512,7 +525,7 @@ try8_param = [  {'hook_func' : None,
                  'cfg_param' : {'speed':MAX_SPEED*0.5, 'kP':3.0, 'kI':0.0001, 'kD':2.5},
                  'trig_name' : "default_trig",
                  'log_msg'   : "breaking stage before PointD",},
-                None, None, None,
+                None, None, None, None,
                 {'hook_func' : [{'ball_guard':None}],
                  'cfg_name'  : None,
                  'log_msg'   : None,}  ]

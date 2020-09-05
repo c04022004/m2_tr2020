@@ -267,12 +267,12 @@ class MainForm(npyscreen.ActionFormV2):
         _relx, _rely = int(0), int(0)
         _rely += 2
         self.auto_vel = self.add(ProperTitleSider, name="Auto MAX speed:",
-            value=4.5, out_of=5.5, lowest=2.0, step=0.1, 
+            value=3.1, out_of=5.5, lowest=1.5, step=0.1, 
             max_width=70, rely=_rely,
         )
         _rely += 3
         self.manual_vel = self.add(ProperTitleSider, name="Manual MAX speed:",
-            value=2.5, out_of=5.5, lowest=1.2, step=0.1,
+            value=2.8, out_of=5.5, lowest=1.2, step=0.1,
             max_width=70, rely=_rely,
         )
         _rely += 3

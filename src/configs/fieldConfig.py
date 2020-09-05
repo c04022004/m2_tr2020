@@ -23,7 +23,7 @@ def phrase_color_from_launch():
         return MATCH_NONE
 
 def phrase_team_from_launch():
-    team = rospy.get_param("~team", "rx")
+    team = rospy.get_param("~team", "none")
     if team == "rtx":
         rospy.loginfo("%s started with ROBOT_TR1"%rospy.get_name())
         return ROBOT_TR1
