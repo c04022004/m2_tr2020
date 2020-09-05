@@ -34,7 +34,7 @@ slider_pos = False
 # State of the ps4 handler
 control_mode = None
 FULL_MANUAL = 3
-ASSISTED_MANUAL =4
+ASSISTED_MANUAL = 4
 SEMI_AUTO = 5
 NO_MOTOR = 6
 
@@ -43,7 +43,6 @@ motor_en = True
 
 # Odom position
 odom_pos = None
-is_offset = False
 
 def slider_cb(msg):
     global slider_pos
@@ -170,36 +169,18 @@ def ps4_cb(ps4_data): # update ps4 data
 
     elif control_mode == SEMI_AUTO:
         # control offset at reciving position, vel fixed at 1.8ms^-1
-        offset_speed = 2.0
+        offset_speed = 1.0
         global_vel = Twist()
-        ff_req = SetFfRequest([])
         if match_color == MATCH_RED:
             # non-linear control
             global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly)
             global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx)
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
-            # limit the vel by odom_pos
-            if odom_pos != None:
-                if odom_pos["x"] > 1.57-0.6:
-                    global_vel.linear.x = min(0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 0.67:
-                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
         elif match_color == MATCH_BLUE:
             # remap the direction
             global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly*-1)
             global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx*-1)
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
-            # limit the vel by odom_pos
-            if odom_pos != None:
-                if odom_pos["x"] > 13.3-0.67:
-                    global_vel.linear.x = min(0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 13.3-(1.57-0.60):
-                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-
         vel_magnitude = np.hypot(global_vel.linear.x, global_vel.linear.y)
         if np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0):
             orientation_helper.stop_z()
@@ -210,26 +191,14 @@ def ps4_cb(ps4_data): # update ps4 data
         local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
         # Publish velocity if manual offset is non-zero
-        global is_offset
         if not (np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0)):
-            is_offset = True
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear
             direct.angular = local_vel.angular
             vel_pub.publish(direct)
-            try:
-                ps4_ff_srv(ff_req)
-            except (rospy.ServiceException, rospy.ROSException) as e:
-                rospy.logerr_throttle(10,"/set_ff call failed")
-        elif is_offset:
-            is_offset = False
-            direct = ChannelTwist() # Stop moving
-            direct.channel = ChannelTwist.CONTROLLER
-            vel_pub.publish(direct)
-            try:
-                ps4_ff_srv(SetFfRequest([])) # Stop rumble
-            except (rospy.ServiceException, rospy.ROSException) as e:
-                rospy.logerr_throttle(10,"/set_ff call failed")
+            cancel_all_action()
+            control_mode = ASSISTED_MANUAL
+            update_led()
 
     # Try-related functions
     if control_mode == FULL_MANUAL or control_mode == ASSISTED_MANUAL:
@@ -258,34 +227,56 @@ def ps4_cb(ps4_data): # update ps4 data
                     dji_try_pub.publish(goal)
 
     elif control_mode == SEMI_AUTO:
-        if ps4_data.options and not old_data.options: # tryspot1
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 1
-            fulltask_pub.publish(goal)
-        if ps4_data.triangle and not old_data.triangle: # tryspot2
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 2
-            fulltask_pub.publish(goal)
-        if ps4_data.circle and not old_data.circle: # tryspot3
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 3
-            fulltask_pub.publish(goal)
-        if ps4_data.cross and not old_data.cross: # tryspot4
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 4
-            fulltask_pub.publish(goal)
-        if ps4_data.square and not old_data.square: # tryspot5
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 5
-            fulltask_pub.publish(goal)
-        if (ps4_data.dpad_y == -1) and not old_data.dpad_y: # pointC
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 7
-            fulltask_pub.publish(goal)
-        if (ps4_data.dpad_y ==  1) and not old_data.dpad_y: # pointD
-            goal = FulltaskActionGoal()
-            goal.goal.scene_id = 8
-            fulltask_pub.publish(goal)
+        if not ps4_data.r1:
+            if ps4_data.options and not old_data.options: # tryspot1
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 1
+                fulltask_pub.publish(goal)
+            if ps4_data.triangle and not old_data.triangle: # tryspot2
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 2
+                fulltask_pub.publish(goal)
+            if ps4_data.circle and not old_data.circle: # tryspot3
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 3
+                fulltask_pub.publish(goal)
+            if ps4_data.cross and not old_data.cross: # tryspot4
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 4
+                fulltask_pub.publish(goal)
+            if ps4_data.square and not old_data.square: # tryspot5
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 5
+                fulltask_pub.publish(goal)
+        else:
+            if ps4_data.options and not old_data.options: # tryspot1
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 11
+                fulltask_pub.publish(goal)
+            if ps4_data.triangle and not old_data.triangle: # tryspot2
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 12
+                fulltask_pub.publish(goal)
+            if ps4_data.circle and not old_data.circle: # tryspot3
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 13
+                fulltask_pub.publish(goal)
+            if ps4_data.cross and not old_data.cross: # tryspot4
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 14
+                fulltask_pub.publish(goal)
+            if ps4_data.square and not old_data.square: # tryspot5
+                goal = FulltaskActionGoal()
+                goal.goal.scene_id = 15
+                fulltask_pub.publish(goal)
+
+        POINT_S = {'x': 0.5, 'y': 9.50}
+        POINT_A = {'x': 0.8, 'y': 0.48}
+        def dist_to_PT(pt, odom):
+            dx = pt['x'] - odom['x']
+            dy = pt['y'] - odom['y']
+            return np.hypot(dx,dy)
+
         if (ps4_data.dpad_x == 1) and not old_data.dpad_x: # back to start zone
             if match_color == MATCH_RED:
                 # back to start zone (TRSZ)
@@ -294,13 +285,19 @@ def ps4_cb(ps4_data): # update ps4 data
             elif match_color == MATCH_BLUE:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 0
+                if dist_to_PT(POINT_S,odom_pos)<2.0:
+                    goal.goal.scene_id = 0
+                elif dist_to_PT(POINT_A,odom_pos)<4.0:
+                    goal.goal.scene_id = 9
                 fulltask_pub.publish(goal)
         if (ps4_data.dpad_x == -1) and not old_data.dpad_x: # back to start zone
             if match_color == MATCH_RED:
                 # scene0/go wait 1st ball
                 goal = FulltaskActionGoal()
-                goal.goal.scene_id = 0
+                if dist_to_PT(POINT_S,odom_pos)<2.0:
+                    goal.goal.scene_id = 0
+                elif dist_to_PT(POINT_A,odom_pos)<4.0:
+                    goal.goal.scene_id = 9
                 fulltask_pub.publish(goal)
             elif match_color == MATCH_BLUE:
                 # back to start zone (TRSZ)
