@@ -36,18 +36,18 @@ CHK_PTS = [
     {
         'curve': "cubic",
         # POINT_C -> TS1, via TZ2 (mostly straight)
-        'f_path': [ POINT_C,(3.33919,3.58903),POINT_1 ],
+        'f_path': [ POINT_A,(3.26364,3.6972),(4.10669,4.06621),POINT_1 ],
         # TS2 -> POINT_E, via TZ2 (curved)
-        'b_path': [ POINT_1,(3.68049,4.56372),POINT_E ],
+        'b_path': [ POINT_1,(4.10669,4.06621),(3.26364,3.6972),POINT_A ],
     },
     # scene 2
     {
         'curve': "cubic",
         # POINT_B -> TS2, via TZ2 (mostly straight)
         # (5.64966,4.43162),(3.40273,3.8522),(0.906773,3.2515)
-        'f_path': [ POINT_B,(3.31654,3.69184),POINT_2 ],
+        'f_path': [ POINT_A,(3.26364,3.6972),POINT_2 ],
         # TS2 -> POINT_C, via TZ2 (curved)
-        'b_path': [ POINT_2,(3.31654,3.69184),POINT_C ],
+        'b_path': [ POINT_2,(3.26364,3.6972),POINT_A ],
     },
     # scene 3
     {
@@ -55,21 +55,21 @@ CHK_PTS = [
         # always the first ball (mostly straight)
         'f_path': [ POINT_A,(3.1, 3.57), POINT_3 ],
         # TS3 -> POINT_B, via TZ2 (slightly curved)
-        'b_path': [ POINT_3,(3.1, 3.57), POINT_B ],
+        'b_path': [ POINT_3,(3.1, 3.57), POINT_A ],
     },
     # scene 4
     {
         'curve': "cubic",
         # POINT_E -> TS4, via TZ1 (mostly straight)
-        'f_path': [ POINT_E,(3.37841,6.23819),POINT_4 ],
+        'f_path': [ POINT_A,(3.26364,3.6972),(4.08029,4.25115),POINT_4 ],
         # TS4 -> POINT_D, via TZ1 (curved)
-        'b_path': [ POINT_4,(3.10521,6.32539),POINT_D ],
+        'b_path': [ POINT_4,(4.08029,4.25115),(3.26364,3.6972),POINT_A ],
     },
     # scene 5
     {
         'curve': "cubic",
         # POINT_D -> TS5, via TZ1 (mostly straight)
-        'f_path': [ POINT_D,(3.13137,6.26445),POINT_5 ],
+        'f_path': [ POINT_A,(3.26364,3.6972),(4.08029,4.25115),POINT_5 ],
         # TS5 -> POINT_E, via TZ1 (starting position retracted)
         'b_path': [ (POINT_5[0]-0.25,POINT_5[1]),(3.13137,6.26445),POINT_D ],
     },
@@ -348,7 +348,7 @@ try1_param = [  {'hook_func' : [{'hook0':None}],
                 {'hook_func' : [{'comm_pr_can_lift':[CAN_CLIP_PT_E]}],
                  'cfg_name'  : 'scene1_b',
                  'cfg_param' : {'speed':MAX_SPEED*1.0, 'radius':2.0, 'stop_min_speed':0.75,
-                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':0.4},
+                                'velocity_shift_kP':8.0, 'curvature_penalty_kP':1.0},
                  'trig_name' : 'rec_pid_trig',
                  'log_msg'   : "back to receiving pos",},
                 {'hook_func' : [{'post_try_seq':None},{'call_pr':[CAN_PASS_COMMAND]}],
