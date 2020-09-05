@@ -34,7 +34,7 @@ slider_pos = False
 # State of the ps4 handler
 control_mode = None
 FULL_MANUAL = 3
-ASSISTED_MANUAL =4
+ASSISTED_MANUAL = 4
 SEMI_AUTO = 5
 NO_MOTOR = 6
 
@@ -43,7 +43,6 @@ motor_en = True
 
 # Odom position
 odom_pos = None
-is_offset = False
 
 def slider_cb(msg):
     global slider_pos
@@ -170,36 +169,18 @@ def ps4_cb(ps4_data): # update ps4 data
 
     elif control_mode == SEMI_AUTO:
         # control offset at reciving position, vel fixed at 1.8ms^-1
-        offset_speed = 2.0
+        offset_speed = 1.0
         global_vel = Twist()
-        ff_req = SetFfRequest([])
         if match_color == MATCH_RED:
             # non-linear control
             global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly)
             global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx)
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
-            # limit the vel by odom_pos
-            if odom_pos != None:
-                if odom_pos["x"] > 1.57-0.6:
-                    global_vel.linear.x = min(0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 0.67:
-                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
         elif match_color == MATCH_BLUE:
             # remap the direction
             global_vel.linear.x = np.copysign(np.abs(ps4_data.hat_ly)**1.7*offset_speed, ps4_data.hat_ly*-1)
             global_vel.linear.y = np.copysign(np.abs(ps4_data.hat_lx)**1.7*offset_speed, ps4_data.hat_lx*-1)
             global_vel.angular.z = ps4_data.hat_rx*max_rotational_speed
-            # limit the vel by odom_pos
-            if odom_pos != None:
-                if odom_pos["x"] > 13.3-0.67:
-                    global_vel.linear.x = min(0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-                if odom_pos["x"] < 13.3-(1.57-0.60):
-                    global_vel.linear.x = max(-0.1,global_vel.linear.x)
-                    ff_req = SetFfRequest([FfTime(64000,40000,0.1,0.0)])
-
         vel_magnitude = np.hypot(global_vel.linear.x, global_vel.linear.y)
         if np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0):
             orientation_helper.stop_z()
@@ -210,26 +191,14 @@ def ps4_cb(ps4_data): # update ps4 data
         local_vel = kmt_helper.kmt_world2local(fix_theta_vel)
 
         # Publish velocity if manual offset is non-zero
-        global is_offset
         if not (np.isclose(global_vel.angular.z,0.0) and np.isclose(vel_magnitude,0.0)):
-            is_offset = True
             direct.channel = ChannelTwist.CONTROLLER
             direct.linear = local_vel.linear
             direct.angular = local_vel.angular
             vel_pub.publish(direct)
-            try:
-                ps4_ff_srv(ff_req)
-            except (rospy.ServiceException, rospy.ROSException) as e:
-                rospy.logerr_throttle(10,"/set_ff call failed")
-        elif is_offset:
-            is_offset = False
-            direct = ChannelTwist() # Stop moving
-            direct.channel = ChannelTwist.CONTROLLER
-            vel_pub.publish(direct)
-            try:
-                ps4_ff_srv(SetFfRequest([])) # Stop rumble
-            except (rospy.ServiceException, rospy.ROSException) as e:
-                rospy.logerr_throttle(10,"/set_ff call failed")
+            cancel_all_action()
+            control_mode = ASSISTED_MANUAL
+            update_led()
 
     # Try-related functions
     if control_mode == FULL_MANUAL or control_mode == ASSISTED_MANUAL:
