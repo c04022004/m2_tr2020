@@ -1,8 +1,10 @@
 # m2_tr2020
 A fork of the m2robocon/m2_tr2020, just to show some of the work we've achieved
 
-## Content
-
+## How to start
+Refer to `src/mini_keyboard.ino` for the arduino code for the customizable keyboard, and  
+`src/tmux_tui.py` for the TUI for launching the launch files in `launch/`.  
+However the implementations and the many of the packages with `m2_` prefix is not included in this repo.
 
 
 ## Images and Screenshots
